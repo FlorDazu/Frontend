@@ -7,8 +7,11 @@
 # Start:  server.mjs (Node nativo, sin dependencias) sirve los estáticos con
 #         fallback de SPA. Consumo ≈ 50 MB de RAM (límite del plan: 512 MB).
 #
-# Después del primer despliegue, en el servicio del BACKEND añadir:
-#   CORS_ORIGINS=https://ayni-frontend.onrender.com   (sin "/" final)
+# URL pública: https://frontend-qwpp.onrender.com
+# Deploy: lo dispara GitHub Actions (.github/workflows/ci-cd.yml) con el
+#         Deploy Hook; por eso autoDeploy está en false.
+# CORS:   el servicio del BACKEND debe tener
+#         CORS_ORIGINS=https://frontend-qwpp.onrender.com   (sin "/" final)
 # ============================================================================
 services:
   - type: web
@@ -16,10 +19,10 @@ services:
     runtime: node
     plan: free
     branch: main
+    autoDeploy: false
     buildCommand: npm ci --include=dev && npm run build
     startCommand: node server.mjs
     healthCheckPath: /healthz
-    autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: "24"

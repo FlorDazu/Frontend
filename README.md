@@ -59,21 +59,34 @@ extensión devuelve `index.html`, así recargar `/panel/inventario` funciona), c
 
 | Campo | Valor |
 |---|---|
-| Nombre | `ayni-frontend` → `https://ayni-frontend.onrender.com` |
+| Nombre / URL | `ayni-frontend` → `https://frontend-qwpp.onrender.com` |
 | Runtime | Node 24 (`NODE_VERSION=24`, también `.node-version`) |
 | Build Command | `npm ci --include=dev && npm run build` |
 | Start Command | `node server.mjs` |
 | Health Check Path | `/healthz` |
 | Plan | Free (512 MB de RAM; el servidor usa ≈ 50 MB) |
+| Auto-Deploy | **Off** (`autoDeploy: false`): el despliegue lo dispara GitHub Actions |
 
 Pasos:
 
 1. Subir este repositorio a GitHub (`main`).
 2. En Render: **New → Blueprint** → repositorio `Frontend` (usa `render.yaml`). También puede crearse un *Web Service* manual con los valores de la tabla.
-3. **CORS (obligatorio):** en el servicio del **backend**, agregar la variable `CORS_ORIGINS=https://ayni-frontend.onrender.com` (sin `/` final; si Render asigna otra URL, usar esa) y reiniciar el backend. Sin este paso el navegador bloquea las llamadas a la API.
-4. Verificar `https://ayni-frontend.onrender.com/healthz`, abrir el portal, iniciar sesión y recargar una ruta interna (p. ej. `/panel/mi-olla`).
+3. **CORS (obligatorio):** en el servicio del **backend**, la variable `CORS_ORIGINS=https://frontend-qwpp.onrender.com` (sin `/` final) y reiniciar el backend (ya configurado). Sin este paso el navegador bloquea las llamadas a la API.
+4. Verificar `https://frontend-qwpp.onrender.com/healthz`, abrir el portal, iniciar sesión y recargar una ruta interna (p. ej. `/panel/mi-olla`).
 
 > En el plan gratuito los servicios se suspenden tras ~15 minutos sin tráfico: la primera visita puede tardar cerca de un minuto (frontend y backend).
+
+## CI/CD con GitHub Actions
+
+Workflow: `.github/workflows/ci-cd.yml`, se ejecuta en cada **push a `main`**:
+
+| Job | Qué hace |
+|---|---|
+| `build-and-test` | Node 24 → `npm ci --include=dev` → `npm test --if-present` (tests si existe el script) → `npm run build` (producción) |
+| `deploy` (`needs: build-and-test`, `timeout-minutes: 5`) | Solo si el job anterior pasa en verde y es un push a `main`: `curl --fail-with-body --silent --show-error --request POST` al **Deploy Hook** de Render. No sube `dist/`: Render vuelve a compilar con `render.yaml`. |
+
+- **Secreto requerido:** `HOOK_RENDER_FRONTEND` (*Settings → Secrets and variables → Actions*), con la Deploy Hook URL del servicio (Render → *Settings → Deploy Hook*).
+- **Auto-Deploy desactivado:** `render.yaml` tiene `autoDeploy: false`. Si el servicio se creó a mano (no como Blueprint), desactívelo también en el panel: *Settings → Build & Deploy → Auto-Deploy: Off*. Si queda activo, cada push despliega dos veces y Render publicaría incluso builds rotos.
 
 ## Usuarios de prueba
 
