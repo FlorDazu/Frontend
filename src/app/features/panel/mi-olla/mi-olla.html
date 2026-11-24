@@ -1,0 +1,110 @@
+@if (cargando()) {
+  <div class="cargando">
+    <div class="rueda" aria-hidden="true"></div>
+    <span>Cargando su olla…</span>
+  </div>
+} @else if (error() && !olla()) {
+  <div class="alerta alerta-error">{{ error() }}</div>
+} @else if (olla(); as olla) {
+  <div class="seccion-titulo">
+    <div>
+      <span class="ficha-codigo">{{ olla.codigo_unico }}</span>
+      <h1 class="mt-1">{{ olla.nombre }}</h1>
+      <p class="tenue mb-0">Perfil de su olla y estado del día</p>
+    </div>
+    <div class="fila envolver">
+      <span [class]="'chip ' + (olla.activada ? 'chip-verde' : 'chip-rojo')">
+        {{ olla.activada ? 'Olla activa' : 'Olla desactivada' }}
+      </span>
+      @if (olla.verificada) {
+        <span class="chip chip-verde">Verificada</span>
+      }
+      <span [class]="'chip ' + (olla.atiende_hoy ? 'chip-verde' : 'chip-rojo')">
+        {{ olla.atiende_hoy ? 'Atiende hoy' : 'No atiende hoy' }}
+      </span>
+    </div>
+  </div>
+
+  <div class="rejilla">
+    <!-- ---------------------------------------------------- ficha -->
+    <article class="tarjeta">
+      <div class="tarjeta-titulo">Datos de la olla</div>
+      <div class="dato-fila"><span class="tenue">Código único</span><span class="valor">{{ olla.codigo_unico }}</span></div>
+      <div class="dato-fila"><span class="tenue">Dirección</span><span class="valor">{{ olla.direccion }}</span></div>
+      @if (olla.referencia) {
+        <div class="dato-fila"><span class="tenue">Referencia</span><span class="valor">{{ olla.referencia }}</span></div>
+      }
+      <div class="dato-fila"><span class="tenue">Teléfono</span><span class="valor">{{ olla.telefono }}</span></div>
+      <div class="dato-fila"><span class="tenue">Distrito</span><span class="valor">{{ olla.distrito }}, {{ olla.departamento }}</span></div>
+      <div class="dato-fila"><span class="tenue">Registrada el</span><span class="valor">{{ fFecha(olla.fecha_registro) }}</span></div>
+      <div class="dato-fila"><span class="tenue">Atiende hoy</span><span class="valor">{{ fSiNo(olla.atiende_hoy) }}</span></div>
+      <div class="dato-fila"><span class="tenue">Recibe frescos</span><span class="valor">{{ fSiNo(olla.recibe_frescos) }}</span></div>
+      <div class="dato-fila"><span class="tenue">Beneficiarias(os)</span><span class="valor">{{ fEntero(olla.beneficiarios) }}</span></div>
+
+      @if (olla.necesidades_urgentes) {
+        <div class="alerta alerta-info mt-3">
+          <div>
+            <strong>Necesidades urgentes publicadas:</strong>
+            <div>{{ olla.necesidades_urgentes }}</div>
+          </div>
+        </div>
+      }
+    </article>
+
+    <!-- ------------------------------------------- estado diario -->
+    <article class="tarjeta">
+      <div class="tarjeta-titulo">Estado diario</div>
+      <p class="tenue chico">
+        Los cambios se reflejan de inmediato en el portal público.
+      </p>
+
+      @if (error()) {
+        <div class="error-form">{{ error() }}</div>
+      }
+
+      <form (ngSubmit)="guardarEstado()" #estadoForm="ngForm">
+        <div class="apilar mb-3">
+          <label class="interruptor">
+            <span>¿Atiende hoy?</span>
+            <span class="casilla-fila">
+              <input type="checkbox" name="atiende_hoy" [(ngModel)]="atiendeHoy" />
+              <span [class]="atiendeHoy ? 'texto-exito negrita' : 'texto-error negrita'">
+                {{ atiendeHoy ? 'Sí, atiende' : 'No atiende' }}
+              </span>
+            </span>
+          </label>
+
+          <label class="interruptor">
+            <span>¿Recibe donaciones frescas?</span>
+            <span class="casilla-fila">
+              <input type="checkbox" name="recibe_frescos" [(ngModel)]="recibeFrescos" />
+              <span [class]="recibeFrescos ? 'texto-exito negrita' : 'texto-error negrita'">
+                {{ recibeFrescos ? 'Sí recibe' : 'No recibe' }}
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div class="grupo-form mb-3">
+          <div class="campo">
+            <label class="etiqueta" for="beneficiarios">Beneficiarias(os) de hoy</label>
+            <input id="beneficiarios" name="beneficiarios" class="entrada" type="number" min="0" max="100000"
+                   [(ngModel)]="beneficiarios" />
+          </div>
+        </div>
+
+        <div class="campo mb-3">
+          <label class="etiqueta" for="necesidades">Necesidades urgentes</label>
+          <textarea id="necesidades" name="necesidades" class="area" maxlength="500"
+                    placeholder="Ej.: Lentejas, aceite vegetal, pollo fresco y papas"
+                    [(ngModel)]="necesidades"></textarea>
+          <span class="campo-ayuda">{{ necesidades.length }}/500 caracteres · se publica en su ficha pública.</span>
+        </div>
+
+        <button type="submit" class="btn btn-exito" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar estado del día' }}
+        </button>
+      </form>
+    </article>
+  </div>
+}

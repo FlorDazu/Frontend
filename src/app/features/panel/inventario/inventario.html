@@ -1,0 +1,288 @@
+<div class="seccion-titulo">
+  <div>
+    <h1>Inventario PEPS</h1>
+    <p class="tenue mb-0">Stock consolidado, lotes con semáforo, entradas, salidas y descartes</p>
+  </div>
+  <div class="fila envolver">
+    <button type="button" class="btn btn-mini" [class.btn-fantasma]="!mostrarEntrada" (click)="mostrarEntrada = !mostrarEntrada; mostrarSalida = false; errorForm.set('')">
+      + Registrar entrada
+    </button>
+    <button type="button" class="btn btn-secundario btn-mini" [class.btn-fantasma]="!mostrarSalida" (click)="mostrarSalida = !mostrarSalida; mostrarEntrada = false; errorForm.set('')">
+      − Registrar salida (PEPS)
+    </button>
+  </div>
+</div>
+
+@if (error() && !stock().length && !lotes().length) {
+  <div class="alerta alerta-error mb-3">{{ error() }}</div>
+}
+
+<!-- ------------------------------------------------------- formularios -->
+@if (mostrarEntrada || mostrarSalida) {
+  <div class="tarjeta mb-3">
+    @if (errorForm()) {
+      <div class="error-form">{{ errorForm() }}</div>
+    }
+
+    @if (mostrarEntrada) {
+      <div class="tarjeta-titulo">
+        Registrar entrada de inventario
+        <button type="button" class="btn btn-fantasma btn-mini" (click)="mostrarEntrada = false">Cancelar</button>
+      </div>
+      <form (ngSubmit)="registrarEntrada()" #entradaForm="ngForm">
+        <div class="grupo-form mb-3">
+          <div class="campo">
+            <label class="etiqueta" for="e-insumo">Insumo <span class="req">*</span></label>
+            <select id="e-insumo" name="entrada_insumo" class="selector" [(ngModel)]="entrada.id_insumo" required>
+              <option [value]="0" disabled>Seleccione…</option>
+              @for (insumo of insumos(); track insumo.id_insumo) {
+                <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ insumo.categoria }})</option>
+              }
+            </select>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="e-cantidad">Cantidad <span class="req">*</span></label>
+            <input id="e-cantidad" name="entrada_cantidad" class="entrada" type="number" min="0.01" step="0.01"
+                   [(ngModel)]="entrada.cantidad" required />
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="e-vencimiento">Fecha de vencimiento</label>
+            <input id="e-vencimiento" name="entrada_vencimiento" class="entrada" type="date"
+                   [(ngModel)]="entrada.fecha_vencimiento" />
+            <span class="campo-ayuda">
+              @if (entrada.id_insumo && insumoRequiereVencimiento(entrada.id_insumo)) {
+                <span class="texto-error">Este insumo exige fecha de vencimiento.</span>
+              } @else {
+                Opcional salvo que el insumo lo requiera.
+              }
+            </span>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="e-motivo">Motivo</label>
+            <input id="e-motivo" name="entrada_motivo" class="entrada" type="text" maxlength="250"
+                   placeholder="Ej.: Compra mensual" [(ngModel)]="entrada.motivo" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-exito" [disabled]="guardando()">
+          {{ guardando() ? 'Registrando…' : 'Registrar entrada' }}
+        </button>
+      </form>
+    }
+
+    @if (mostrarSalida) {
+      <div class="tarjeta-titulo">
+        Registrar salida por método PEPS
+        <button type="button" class="btn btn-fantasma btn-mini" (click)="mostrarSalida = false">Cancelar</button>
+      </div>
+      <form (ngSubmit)="registrarSalida()" #salidaForm="ngForm">
+        <div class="grupo-form mb-3">
+          <div class="campo">
+            <label class="etiqueta" for="s-insumo">Insumo <span class="req">*</span></label>
+            <select id="s-insumo" name="salida_insumo" class="selector" [(ngModel)]="salida.id_insumo" required>
+              <option [value]="0" disabled>Seleccione…</option>
+              @for (insumo of insumos(); track insumo.id_insumo) {
+                <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ insumo.categoria }})</option>
+              }
+            </select>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="s-cantidad">Cantidad <span class="req">*</span></label>
+            <input id="s-cantidad" name="salida_cantidad" class="entrada" type="number" min="0.01" step="0.01"
+                   [(ngModel)]="salida.cantidad" required />
+            <span class="campo-ayuda">Los lotes se descuentan primero en entrar (PEPS).</span>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="s-motivo">Motivo</label>
+            <input id="s-motivo" name="salida_motivo" class="entrada" type="text" maxlength="250"
+                   placeholder="Ej.: Preparación de segundo" [(ngModel)]="salida.motivo" />
+          </div>
+        </div>
+        <button type="submit" class="btn" [disabled]="guardando()">
+          {{ guardando() ? 'Registrando…' : 'Registrar salida' }}
+        </button>
+      </form>
+    }
+  </div>
+}
+
+<!-- ------------------------------------------------------------ pestañas -->
+<div class="pestanas">
+  <button type="button" class="pestana" [class.activa]="pestana === 'stock'" (click)="cambiarPestana('stock')">
+    Stock por insumo
+  </button>
+  <button type="button" class="pestana" [class.activa]="pestana === 'lotes'" (click)="cambiarPestana('lotes')">
+    Lotes (orden PEPS)
+  </button>
+</div>
+
+<!-- --------------------------------------------------------------- stock -->
+@if (pestana === 'stock') {
+  @if (resumen(); as datos) {
+    <div class="rejilla-kpi mb-3">
+      <div class="kpi"><span class="kpi-valor">{{ fEntero(datos.insumos_catalogo) }}</span><span class="kpi-etiqueta">Insumos en catálogo</span></div>
+      <div class="kpi kpi-salvia"><span class="kpi-valor">{{ fEntero(datos.insumos_con_stock) }}</span><span class="kpi-etiqueta">Con stock disponible</span></div>
+      <div class="kpi kpi-terracota"><span class="kpi-valor">{{ fEntero(datos.insumos_stock_bajo) }}</span><span class="kpi-etiqueta">Con stock bajo</span></div>
+      <div class="kpi"><span class="kpi-valor">{{ fEntero(datos.insumos_con_vencidos) }}</span><span class="kpi-etiqueta">Con vencidos</span></div>
+    </div>
+  }
+
+  @if (cargandoStock()) {
+    <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando stock…</span></div>
+  } @else if (stock().length === 0) {
+    <div class="vacio">
+      <h3>Sin existencias registradas</h3>
+      <p>Registre su primera entrada para comenzar el inventario PEPS.</p>
+      <button type="button" class="btn" (click)="mostrarEntrada = true">Registrar entrada</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="datos">
+        <thead>
+          <tr>
+            <th>Insumo</th>
+            <th>Categoría</th>
+            <th class="num">Stock vigente</th>
+            <th class="num">Mínimo</th>
+            <th class="num">Vencido</th>
+            <th class="num">Lotes</th>
+            <th>Próx. vencimiento</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of stock(); track item.id_insumo) {
+            <tr>
+              <td class="negrita">{{ item.nombre }}</td>
+              <td class="tenue">{{ item.categoria }}</td>
+              <td class="num">{{ fDecimal(item.stock_actual) }} {{ item.unidad_base }}</td>
+              <td class="num">{{ fDecimal(item.stock_minimo) }}</td>
+              <td class="num">
+                @if (item.stock_vencido > 0) {
+                  <span class="texto-error negrita">{{ fDecimal(item.stock_vencido) }}</span>
+                } @else {
+                  <span class="tenue">0</span>
+                }
+              </td>
+              <td class="num">{{ fEntero(item.lotes_activos) }}</td>
+              <td>{{ fFecha(item.proximo_vencimiento) }}</td>
+              <td><span [class]="'chip ' + claseStock(item)">{{ textoStock(item) }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
+
+<!-- --------------------------------------------------------------- lotes -->
+@if (pestana === 'lotes') {
+  <div class="fila-filtros">
+    <div class="campo">
+      <label class="etiqueta" for="f-estado">Estado del lote</label>
+      <select id="f-estado" name="filtro_estado" class="selector" [(ngModel)]="filtroEstado" (ngModelChange)="cargarLotes()">
+        <option value="ACTIVO">Activos</option>
+        <option value="TODOS">Todos</option>
+        <option value="AGOTADO">Agotados</option>
+        <option value="DESCARTADO">Descartados</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="f-semaforo">Semáforo de vencimiento</label>
+      <select id="f-semaforo" name="filtro_semaforo" class="selector" [(ngModel)]="filtroSemaforo" (ngModelChange)="cargarLotes()">
+        <option value="">Todos</option>
+        <option value="VIGENTE">Vigentes</option>
+        <option value="POR_VENCER">Por vencer (≤ 7 días)</option>
+        <option value="VENCIDO">Vencidos</option>
+      </select>
+    </div>
+  </div>
+
+  @if (errorForm() && loteDescarte) {
+    <div class="error-form">{{ errorForm() }}</div>
+  }
+
+  @if (loteDescarte) {
+    <div class="tarjeta mb-3">
+      <div class="tarjeta-titulo">Descartar lote #{{ loteDescarte }}</div>
+      <form (ngSubmit)="confirmarDescarte()" #descarteForm="ngForm">
+        <div class="campo mb-3">
+          <label class="etiqueta" for="motivo-descarte">Motivo del descarte <span class="req">*</span></label>
+          <input id="motivo-descarte" name="motivo_descarte" class="entrada" type="text" maxlength="250"
+                 placeholder="Ej.: Lote vencido y en mal estado de conservación"
+                 [(ngModel)]="motivoDescarte" required />
+          <span class="campo-ayuda">Mínimo 5 caracteres. El descarte genera un movimiento #D- en el kardex.</span>
+        </div>
+        <div class="fila">
+          <button type="submit" class="btn btn-peligro" [disabled]="guardando()">
+            {{ guardando() ? 'Descartando…' : 'Confirmar descarte' }}
+          </button>
+          <button type="button" class="btn btn-fantasma" (click)="cancelarDescarte()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (cargandoLotes()) {
+    <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando lotes…</span></div>
+  } @else if (lotes().length === 0) {
+    <div class="vacio">
+      <h3>No hay lotes con este filtro</h3>
+      <p>Cambie los filtros o registre una entrada para ver lotes aquí.</p>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="datos">
+        <thead>
+          <tr>
+            <th>Lote</th>
+            <th>Insumo</th>
+            <th class="num">Inicial</th>
+            <th class="num">Disponible</th>
+            <th>Ingreso</th>
+            <th>Vencimiento</th>
+            <th class="num">Días</th>
+            <th>Semáforo</th>
+            <th>Estado</th>
+            <th class="acciones">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (lote of lotes(); track lote.id_lote) {
+            <tr>
+              <td class="negrita">{{ lote.codigo_lote }}</td>
+              <td>
+                {{ lote.insumo }}
+                <div class="tenue chico">{{ lote.categoria }}</div>
+              </td>
+              <td class="num">{{ fDecimal(lote.cantidad_inicial) }} {{ lote.unidad_base }}</td>
+              <td class="num negrita">{{ fDecimal(lote.cantidad_disponible) }}</td>
+              <td>{{ fFechaHora(lote.fecha_ingreso) }}</td>
+              <td>
+                {{ fFecha(lote.fecha_vencimiento) }}
+                @if (lote.estado === 'ACTIVO' && lote.dias_para_vencer !== null && lote.dias_para_vencer < 0) {
+                  <span class="chip chip-rojo">Vencido</span>
+                }
+              </td>
+              <td class="num">{{ lote.dias_para_vencer ?? '—' }}</td>
+              <td><span [class]="'chip ' + claseSemaforo(lote.semaforo)">{{ lote.semaforo }}</span></td>
+              <td>
+                <span [class]="'chip ' + (lote.estado === 'ACTIVO' ? 'chip-neutro' : lote.estado === 'DESCARTADO' ? 'chip-rojo' : 'chip-ambar')">
+                  {{ lote.estado }}
+                </span>
+              </td>
+              <td class="acciones">
+                @if (lote.estado === 'ACTIVO') {
+                  <button type="button" class="btn btn-peligro btn-mini" (click)="iniciarDescarte(lote.id_lote)">
+                    Descartar
+                  </button>
+                } @else {
+                  <span class="tenue chico">—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

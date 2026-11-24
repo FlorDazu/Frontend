@@ -1,0 +1,96 @@
+<section class="envoltorio mt-4" style="padding-bottom: 40px">
+  <div class="mb-3">
+    <a routerLink="/ollas">← Volver al directorio de ollas</a>
+  </div>
+
+  @if (cargando()) {
+    <div class="cargando">
+      <div class="rueda" aria-hidden="true"></div>
+      <span>Cargando ficha de la olla…</span>
+    </div>
+  } @else if (error()) {
+    <div class="vacio">
+      <h3>No encontramos esta olla</h3>
+      <p>{{ error() }}</p>
+      <a routerLink="/ollas" class="btn">Volver al directorio</a>
+    </div>
+  } @else if (olla(); as olla) {
+    <div class="seccion-titulo">
+      <div>
+        <span class="ficha-codigo">{{ olla.codigo_unico }}</span>
+        <h1 class="mt-1">{{ olla.nombre }}</h1>
+        <p class="tenue mb-0">
+          {{ olla.direccion }} — {{ olla.distrito }}, {{ olla.provincia }}, {{ olla.departamento }}
+        </p>
+      </div>
+      <div class="fila envolver">
+        <span [class]="'chip ' + (olla.atiende_hoy ? 'chip-verde' : 'chip-rojo')">
+          {{ olla.atiende_hoy ? 'Atiende hoy' : 'No atiende hoy' }}
+        </span>
+        @if (olla.recibe_frescos) {
+          <span class="chip chip-ambar">Recibe frescos</span>
+        }
+        @if (olla.verificada) {
+          <span class="chip chip-verde">Olla verificada</span>
+        }
+      </div>
+    </div>
+
+    <div class="rejilla">
+      <article class="tarjeta">
+        <div class="tarjeta-titulo">Datos de la olla</div>
+        <div class="dato-fila"><span class="tenue">Código único</span><span class="valor">{{ olla.codigo_unico }}</span></div>
+        <div class="dato-fila"><span class="tenue">Teléfono</span><span class="valor">{{ olla.telefono }}</span></div>
+        @if (olla.referencia) {
+          <div class="dato-fila"><span class="tenue">Referencia</span><span class="valor">{{ olla.referencia }}</span></div>
+        }
+        <div class="dato-fila"><span class="tenue">Distrito</span><span class="valor">{{ olla.distrito }}</span></div>
+        <div class="dato-fila"><span class="tenue">Provincia</span><span class="valor">{{ olla.provincia }}</span></div>
+        <div class="dato-fila"><span class="tenue">Departamento</span><span class="valor">{{ olla.departamento }}</span></div>
+        <div class="dato-fila"><span class="tenue">Registrada el</span><span class="valor">{{ fFecha(olla.fecha_registro) }}</span></div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="tarjeta-titulo">Estado del día</div>
+        <div class="rejilla-estrecha mb-3">
+          <div class="kpi kpi-salvia">
+            <span class="kpi-valor">{{ fEntero(olla.beneficiarios) }}</span>
+            <span class="kpi-etiqueta">Beneficiarias(os) al día</span>
+          </div>
+          <div class="kpi">
+            <span class="kpi-valor">{{ fSiNo(olla.atiende_hoy) }}</span>
+            <span class="kpi-etiqueta">Atiende hoy</span>
+          </div>
+          <div class="kpi kpi-terracota">
+            <span class="kpi-valor">{{ fSiNo(olla.recibe_frescos) }}</span>
+            <span class="kpi-etiqueta">Recibe frescos</span>
+          </div>
+        </div>
+
+        @if (olla.necesidades_urgentes) {
+          <div class="alerta alerta-info">
+            <div>
+              <strong>Necesidades urgentes de hoy:</strong>
+              <div>{{ olla.necesidades_urgentes }}</div>
+            </div>
+          </div>
+        } @else {
+          <div class="alerta alerta-ok">Esta olla no reporta necesidades urgentes por el momento.</div>
+        }
+      </article>
+    </div>
+
+    <div class="tarjeta mt-3">
+      <div class="tarjeta-titulo">¿Quieres apoyar a esta comunidad?</div>
+      <p class="tenue">
+        Puedes acercar donaciones en especie o monetarias directamente a la olla, o registrar tu propia
+        olla común en la red AYNI.
+      </p>
+      <div class="fila envolver">
+        <a routerLink="/registro" class="btn">Crear cuenta de dirigenta</a>
+        <a routerLink="/registrar-olla" class="btn btn-secundario">Registrar otra olla</a>
+        <a routerLink="/ollas" class="btn btn-fantasma">Ver más ollas</a>
+      </div>
+    </div>
+  }
+</section>

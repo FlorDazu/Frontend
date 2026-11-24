@@ -1,0 +1,129 @@
+<section class="envoltorio mt-4" style="padding-bottom: 40px">
+  <div class="seccion-titulo">
+    <div>
+      <h2>Directorio de ollas comunes</h2>
+      <p class="tenue mb-0">Filtros por ubicación y estado del día</p>
+    </div>
+    @if (!cargando() && !error()) {
+      <span class="chip chip-neutro">{{ total() }} olla(s) encontrada(s)</span>
+    }
+  </div>
+
+  <div class="tarjeta mb-4">
+    <div class="fila-filtros" style="margin-bottom: 0">
+      <div class="campo">
+        <label class="etiqueta" for="dep">Departamento</label>
+        <select
+          id="dep"
+          class="selector"
+          [(ngModel)]="departamentoSel"
+          (ngModelChange)="alCambiarDepartamento()"
+        >
+          <option value="">Todos</option>
+          @for (dep of departamentos; track dep) {
+            <option [value]="dep">{{ dep }}</option>
+          }
+        </select>
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="prov">Provincia</label>
+        <select
+          id="prov"
+          class="selector"
+          [(ngModel)]="provinciaSel"
+          (ngModelChange)="alCambiarProvincia()"
+        >
+          <option value="">Todas</option>
+          @for (prov of provincias; track prov) {
+            <option [value]="prov">{{ prov }}</option>
+          }
+        </select>
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="dist">Distrito</label>
+        <select class="selector" id="dist" [(ngModel)]="distritoSel" (ngModelChange)="buscar()">
+          <option value="">Todos</option>
+          @for (dist of distritos; track dist) {
+            <option [value]="dist">{{ dist }}</option>
+          }
+        </select>
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="estado">Atención</label>
+        <select class="selector" id="estado" [(ngModel)]="atiendeSel" (ngModelChange)="buscar()">
+          <option value="">Todas</option>
+          <option value="1">Atienden hoy</option>
+          <option value="0">No atienden hoy</option>
+        </select>
+      </div>
+      <div class="campo" style="flex: 2; max-width: 340px">
+        <label class="etiqueta" for="q">Buscar por nombre o código</label>
+        <input
+          id="q"
+          class="entrada"
+          type="search"
+          placeholder="Ej.: AYNI-0001 o Corazón"
+          [(ngModel)]="q"
+          (keyup.enter)="buscar()"
+        />
+      </div>
+      <div class="fila">
+        <button type="button" class="btn" (click)="buscar()">Buscar</button>
+        <button type="button" class="btn btn-fantasma" (click)="limpiar()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="cargando">
+      <div class="rueda" aria-hidden="true"></div>
+      <span>Cargando ollas…</span>
+    </div>
+  } @else if (error()) {
+    <div class="alerta alerta-error">{{ error() }}</div>
+  } @else if (ollas().length === 0) {
+    <div class="vacio">
+      <h3>Sin resultados</h3>
+      <p>No hay ollas que coincidan con los filtros seleccionados. Pruebe con otra ubicación.</p>
+      <button type="button" class="btn btn-suave" (click)="limpiar()">Ver todas las ollas</button>
+    </div>
+  } @else {
+    <div class="rejilla-lista">
+      @for (olla of ollas(); track olla.id_olla) {
+        <article class="ficha-olla">
+          <div class="separar">
+            <span class="ficha-codigo">{{ olla.codigo_unico }}</span>
+            <span [class]="'chip ' + (olla.atiende_hoy ? 'chip-verde' : 'chip-rojo')">
+              {{ olla.atiende_hoy ? 'Atiende hoy' : 'No atiende hoy' }}
+            </span>
+          </div>
+
+          <a class="ficha-nombre" [routerLink]="['/ollas', olla.id_olla]">{{ olla.nombre }}</a>
+
+          <div class="tenue chico">
+            {{ olla.distrito }}, {{ olla.provincia }} — {{ olla.direccion }}
+          </div>
+
+          <div class="fila envolver">
+            @if (olla.recibe_frescos) {
+              <span class="chip chip-ambar">Recibe frescos</span>
+            }
+            @if (olla.verificada) {
+              <span class="chip chip-verde">Verificada</span>
+            }
+            <span class="chip chip-neutro">{{ fEntero(olla.beneficiarios) }} beneficiarias(os)</span>
+          </div>
+
+          @if (olla.necesidades_urgentes) {
+            <div class="chico">
+              <strong class="texto-terracota">Necesita hoy:</strong>
+              {{ olla.necesidades_urgentes }}
+            </div>
+          }
+
+          <a class="btn btn-suave btn-mini" [routerLink]="['/ollas', olla.id_olla]">Ver ficha completa</a>
+        </article>
+      }
+    </div>
+  }
+</section>

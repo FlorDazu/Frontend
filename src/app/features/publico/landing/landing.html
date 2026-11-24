@@ -1,0 +1,349 @@
+<!-- ================================================================ HERO -->
+<section class="hero">
+  <div class="envoltorio hero-fila">
+    <div class="hero-texto">
+      <span class="pill">Red Nacional de Ollas Comunes</span>
+
+      <h1 class="hero-titulo mt-3">Cada olla común, una red de apoyo para su comunidad</h1>
+
+      <p class="hero-sub">
+        Conectamos a dirigentas, donantes y voluntarios con indicadores en vivo, trazabilidad
+        transparente y apoyo directo a las familias que más lo necesitan.
+      </p>
+
+      <div class="hero-acciones">
+        <a routerLink="/registrar-olla" class="btn btn-alto">Registrar mi olla común</a>
+        <a routerLink="/login" class="btn btn-fantasma btn-alto">Soy dirigenta, iniciar sesión</a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <figure class="hero-visual-figura">
+        <img
+          src="images/hero-olla.jpg"
+          alt="Tres dirigentes sonrientes sirven una sopa de verduras recién cocinada desde una olla común en la cocina de la comunidad"
+          width="1264"
+          height="848"
+        />
+      </figure>
+
+      @if (kpis(); as datos) {
+        <aside class="tarjeta-flotante" aria-label="Indicador en vivo">
+          <span class="dato-en-vivo">{{ fEntero(datos.beneficiarios_hoy) }}</span>
+          <span class="etiqueta-en-vivo">Beneficiarios atendidos hoy</span>
+          <span class="linea-en-vivo">
+            <span class="punto punto-verde" aria-hidden="true"></span>
+            Dato en vivo de la red
+          </span>
+        </aside>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ BUSCADOR GEOGRÁFICO -->
+<section class="envoltorio" style="margin-top: -34px; position: relative; z-index: 5">
+  <div class="buscador-tarjeta">
+    <div class="buscador-titulo">
+      <span class="caja-icono caja-terracota" aria-hidden="true" style="width: 38px; height: 38px; border-radius: 11px">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 5.5-8 11-8 11s-8-5.5-8-11a8 8 0 0 1 16 0z" />
+          <circle cx="12" cy="10" r="2.8" />
+        </svg>
+      </span>
+      <span>Encuentra ollas comunes cerca de ti</span>
+    </div>
+
+    <div class="buscador">
+      <div class="campo">
+        <label class="etiqueta" for="dep">Departamento</label>
+        <select id="dep" class="selector" [(ngModel)]="departamentoSel" (ngModelChange)="alCambiarDepartamento()">
+          <option value="">Todos</option>
+          @for (dep of departamentos; track dep) {
+            <option [value]="dep">{{ dep }}</option>
+          }
+        </select>
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="prov">Provincia</label>
+        <select id="prov" class="selector" [(ngModel)]="provinciaSel" (ngModelChange)="alCambiarProvincia()">
+          <option value="">Todas</option>
+          @for (prov of provincias; track prov) {
+            <option [value]="prov">{{ prov }}</option>
+          }
+        </select>
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="dist">Distrito</label>
+        <select id="dist" class="selector" [(ngModel)]="distritoSel">
+          <option value="">Todos</option>
+          @for (dist of distritos; track dist) {
+            <option [value]="dist">{{ dist }}</option>
+          }
+        </select>
+      </div>
+      <button type="button" class="btn btn-alto" (click)="buscar()">Buscar ollas</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ INDICADORES EN VIVO -->
+<section class="envoltorio mt-4">
+  <div class="seccion-titulo">
+    <div>
+      <h2>Indicadores de impacto en vivo</h2>
+      <p class="tenue mb-0">Cifras reales de la plataforma, actualizadas con cada movimiento</p>
+    </div>
+    <a routerLink="/ollas" class="btn btn-suave btn-mini">Ver directorio completo</a>
+  </div>
+
+  @if (cargando()) {
+    <div class="cargando">
+      <div class="rueda" aria-hidden="true"></div>
+      <span>Cargando indicadores…</span>
+    </div>
+  } @else if (error()) {
+    <div class="alerta alerta-error">{{ error() }}</div>
+  } @else if (kpis(); as datos) {
+    <div class="rejilla-kpi-editorial">
+      <article class="kpi-editorial borde-terracota">
+        <span class="caja-icono caja-terracota" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 10h16c0 5-3.6 8.5-8 8.5S4 15 4 10z" />
+            <path d="M8 6.5c0-1.4 1.8-1.4 1.8-3M12 6.5c0-1.4 1.8-1.4 1.8-3M16 6.5c0-1.4 1.8-1.4 1.8-3" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fEntero(datos.ollas_activas) }}</span>
+        <span class="kpi-etiqueta">Ollas comunes activas</span>
+      </article>
+
+      <article class="kpi-editorial borde-verde">
+        <span class="caja-icono caja-verde" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M8.3 12.3l2.6 2.6 4.8-5.2" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fEntero(datos.ollas_atienden_hoy) }}</span>
+        <span class="kpi-etiqueta">Atienden hoy</span>
+      </article>
+
+      <article class="kpi-editorial borde-ambar">
+        <span class="caja-icono caja-ambar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="8" r="3.2" />
+            <circle cx="17" cy="9.5" r="2.4" />
+            <path d="M3 19c0-3 2.7-4.8 6-4.8s6 1.8 6 4.8" />
+            <path d="M16.5 14.4c2.4.3 4.5 1.9 4.5 4.6" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fEntero(datos.beneficiarios_hoy) }}</span>
+        <span class="kpi-etiqueta">Personas alimentadas hoy</span>
+      </article>
+
+      <article class="kpi-editorial borde-terracota">
+        <span class="caja-icono caja-terracota" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 7.5 3c0 5-7.5 9.6-7.5 9.6z" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fEntero(datos.beneficiarios_totales) }}</span>
+        <span class="kpi-etiqueta">Beneficiarios en total</span>
+      </article>
+
+      <article class="kpi-editorial borde-verde">
+        <span class="caja-icono caja-verde" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6.5h16M4 12h16M4 17.5h10" />
+            <circle cx="18.5" cy="17.5" r="2.6" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fEntero(datos.distritos_cubiertos) }}</span>
+        <span class="kpi-etiqueta">Distritos que ya participan</span>
+      </article>
+
+      <article class="kpi-editorial borde-ambar">
+        <span class="caja-icono caja-ambar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9.5h16v10H4z" />
+            <path d="M3 6.5h18v3H3zM12 6.5v13" />
+            <path d="M12 6.5c-2.4 0-4.5-1-4.5-2.2S9.6 2.5 12 6.5zM12 6.5c2.4 0 4.5-1 4.5-2.2S14.4 2.5 12 6.5z" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fEntero(datos.total_donaciones) }}</span>
+        <span class="kpi-etiqueta">Donaciones recibidas</span>
+      </article>
+
+      <article class="kpi-editorial borde-terracota">
+        <span class="caja-icono caja-terracota" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M14.6 9.2c-.6-.8-1.6-1.2-2.7-1.2-1.5 0-2.6.8-2.6 1.9 0 2.6 5.4 1.4 5.4 4 0 1.2-1.2 2-2.8 2-1.2 0-2.3-.5-2.9-1.4M12 6.2v11.6" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fSoles(datos.monto_donado_soles) }}</span>
+        <span class="kpi-etiqueta">Dinero donado a la red</span>
+      </article>
+
+      <article class="kpi-editorial borde-verde">
+        <span class="caja-icono caja-verde" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h11l-2.6-2.6M20 17H9l2.6 2.6" />
+            <path d="M17 7l3 3M7 17l-3-3" />
+          </svg>
+        </span>
+        <span class="kpi-valor">{{ fEntero(datos.total_movimientos) }}</span>
+        <span class="kpi-etiqueta">Registros de inventario</span>
+      </article>
+    </div>
+  }
+</section>
+
+<!-- ================================================== VITRINA DE APOYO -->
+<section class="envoltorio mt-4">
+  <div class="seccion-titulo">
+    <div>
+      <h2>Ollas que necesitan tu apoyo hoy</h2>
+      <p class="tenue mb-0">Cada etiqueta es un insumo concreto que esta semana hace falta en la cocina</p>
+    </div>
+    <a routerLink="/ollas" class="btn btn-suave btn-mini">Ver todas las ollas</a>
+  </div>
+
+  @if (cargandoVitrina()) {
+    <div class="cargando">
+      <div class="rueda" aria-hidden="true"></div>
+      <span>Buscando ollas activas…</span>
+    </div>
+  } @else if (vitrina().length === 0) {
+    <div class="vacio">
+      <h3>No hay ollas publicadas por ahora</h3>
+      <p>Sea la primera en sumar su olla común a la red.</p>
+      <a routerLink="/registrar-olla" class="btn">Registrar mi olla</a>
+    </div>
+  } @else {
+    <div class="vitrina-rejilla">
+      @for (olla of vitrina(); track olla.id_olla) {
+        <article class="ficha-olla">
+          <div class="vitrina-cabecera">
+            <span [class]="'chip ' + (olla.atiende_hoy ? 'chip-verde' : 'chip-neutro')">
+              {{ olla.atiende_hoy ? 'Atiende hoy' : 'Atiende esta semana' }}
+            </span>
+            <span class="ficha-codigo">{{ olla.codigo_unico }}</span>
+          </div>
+
+          <h3 class="ficha-nombre">{{ olla.nombre }}</h3>
+
+          <div class="vitrina-datos">
+            <span class="linea">
+              <span aria-hidden="true">📍</span>
+              <strong>{{ olla.distrito }}</strong>, {{ olla.provincia }}
+            </span>
+            <span class="linea">
+              <span aria-hidden="true">🍲</span>
+              <strong>{{ fEntero(olla.beneficiarios) }}</strong> raciones al día
+            </span>
+          </div>
+
+          @if (insumos(olla).length > 0) {
+            <div class="etiquetas-insumo mt-2">
+              @for (insumo of insumos(olla); track insumo) {
+                <span class="chip chip-ambar">{{ insumo }}</span>
+              }
+            </div>
+          }
+
+          <a [routerLink]="['/ollas', olla.id_olla]" class="btn btn-ancho mt-3">Ver olla y ayudar</a>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+<!-- ================================================ CÓMO FUNCIONA -->
+<section class="envoltorio mt-4" style="padding-bottom: 24px">
+  <div class="seccion-titulo">
+    <div>
+      <h2>¿Cómo funciona el Ayni?</h2>
+      <p class="tenue mb-0">Reciprocidad en acción: de la donación a la mesa de la comunidad</p>
+    </div>
+    <a routerLink="/registrar-olla" class="btn btn-suave btn-mini">Sumar mi olla</a>
+  </div>
+
+  <div class="rejilla rejilla-tres">
+    <article class="tarjeta tarjeta-borde-superior borde-terracota">
+      <img
+        class="tarjeta-img"
+        src="images/comunidad-ayni.jpg"
+        alt="Varias manos sostienen juntas una olla de aluminio con el logo de AYNI sobre la mesa de madera de la comunidad"
+        width="928"
+        height="1143"
+        loading="lazy"
+      />
+      <div class="fila medio mt-3" style="gap: 12px">
+        <span class="caja-icono caja-terracota" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="M16 16l4.5 4.5" />
+          </svg>
+        </span>
+        <span class="chip chip-terracota">Paso 1</span>
+      </div>
+      <h3 class="mt-3">Encuentra tu olla</h3>
+      <p class="tenue">
+        Busca por departamento, provincia o distrito y mira al instante si la olla atiende hoy,
+        cuántas raciones sirve y qué insumos necesita esta semana.
+      </p>
+      <a routerLink="/ollas" class="btn btn-fantasma">Explorar ollas</a>
+    </article>
+
+    <article class="tarjeta tarjeta-borde-superior borde-verde">
+      <img
+        class="tarjeta-img"
+        src="images/donacion-alimentos.jpg"
+        alt="Voluntarios clasificando una donación de alimentos sobre la mesa: arroz, aceite, papas, zanahorias y hojas verdes"
+        width="1264"
+        height="848"
+        loading="lazy"
+      />
+      <div class="fila medio mt-3" style="gap: 12px">
+        <span class="caja-icono caja-verde" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </span>
+        <span class="chip chip-verde">Paso 2</span>
+      </div>
+      <h3 class="mt-3">Registra tu olla</h3>
+      <p class="tenue">
+        Da de alta tu olla común en minutos y recibe un código único de la comunidad. Cada donación
+        queda anotada con nombre, fecha y destino.
+      </p>
+      <a routerLink="/registrar-olla" class="btn btn-fantasma">Registrar ahora</a>
+    </article>
+
+    <article class="tarjeta tarjeta-borde-superior borde-ambar">
+      <img
+        class="tarjeta-img"
+        src="images/hero-olla.jpg"
+        alt="Dirigentes sirviendo sopa recién cocinada a las familias de la comunidad"
+        width="1264"
+        height="848"
+        loading="lazy"
+      />
+      <div class="fila medio mt-3" style="gap: 12px">
+        <span class="caja-icono caja-ambar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19V9M10 19V5M16 19v-7M20 19h-18" />
+          </svg>
+        </span>
+        <span class="chip chip-ambar">Paso 3</span>
+      </div>
+      <h3 class="mt-3">Gestiona con confianza</h3>
+      <p class="tenue">
+        Inventario con rotación PEPS, recetas que descuentan solo lo necesario y reportes claros
+        para rendir cuentas ante el barrio y los donantes.
+      </p>
+      <a routerLink="/login" class="btn btn-fantasma">Entrar al panel</a>
+    </article>
+  </div>
+</section>

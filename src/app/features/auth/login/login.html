@@ -1,0 +1,63 @@
+<section class="envoltorio mt-4" style="max-width: 460px; padding-bottom: 46px">
+  <div class="tarjeta">
+    <div class="seccion-titulo">
+      <div>
+        <h1>Iniciar sesión</h1>
+        <p class="tenue mb-0">Acceso de dirigentas y administradores</p>
+      </div>
+      <span class="chip chip-terracota">AYNI</span>
+    </div>
+
+    @if (sesionExpirada) {
+      <div class="alerta alerta-info mb-3">
+        Su sesión finalizó por seguridad (token vencido o caducado). Inicie sesión nuevamente.
+      </div>
+    }
+
+    @if (error()) {
+      <div class="error-form">{{ error() }}</div>
+    }
+
+    <form (ngSubmit)="enviar()" #loginForm="ngForm" novalidate>
+      <div class="campo mb-3">
+        <label class="etiqueta" for="username">Usuario o correo electrónico <span class="req">*</span></label>
+        <input
+          id="username"
+          name="username"
+          class="entrada"
+          type="text"
+          autocomplete="username"
+          placeholder="Ej.: dirigenta@ayni.org"
+          [(ngModel)]="username"
+          required
+        />
+      </div>
+
+      <div class="campo mb-3">
+        <label class="etiqueta" for="password">Contraseña <span class="req">*</span></label>
+        <input
+          id="password"
+          name="password"
+          class="entrada"
+          type="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          [(ngModel)]="password"
+          required
+        />
+      </div>
+
+      <button type="submit" class="btn btn-ancho" [disabled]="cargando()">
+        {{ cargando() ? 'Verificando…' : 'Entrar' }}
+      </button>
+    </form>
+
+    <p class="centro-texto mt-3 mb-0 tenue chico">
+      ¿Aún no tienes cuenta?
+      <a routerLink="/registro">Crea tu cuenta de dirigenta con tu olla</a>
+    </p>
+    <p class="centro-texto mt-1 mb-0 tenue chico">
+      <a routerLink="/">← Volver al portal público</a>
+    </p>
+  </div>
+</section>

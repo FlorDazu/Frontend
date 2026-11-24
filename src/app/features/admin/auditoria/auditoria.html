@@ -1,0 +1,199 @@
+<div class="seccion-titulo">
+  <div>
+    <h1>Auditoría por olla</h1>
+    <p class="tenue mb-0">Resumen, stock y kardex de una olla concreta</p>
+  </div>
+  @if (idOlla(); as id) {
+    <div class="fila envolver">
+      <span class="chip chip-terracota">Olla #{{ id }}</span>
+      <button type="button" class="btn btn-fantasma btn-mini" (click)="cambiarDeOlla()">Cambiar de olla</button>
+    </div>
+  }
+</div>
+
+@if (error()) {
+  <div class="alerta alerta-error mb-3">{{ error() }}</div>
+}
+
+<!-- ------------------------------------------------------- selector de olla -->
+@if (!idOlla()) {
+  <div class="tarjeta" style="max-width: 640px">
+    <div class="tarjeta-titulo">Seleccione la olla a auditar</div>
+    <p class="tenue chico">
+      Como administración global, primero elija la olla que desea revisar: la elección queda
+      guardada en la dirección de la página para que pueda compartirla con otra persona del
+      equipo.
+    </p>
+
+    <div class="campo mb-3">
+      <label class="etiqueta" for="sel-olla">Olla común</label>
+      <select id="sel-olla" name="olla_sel" class="selector" [(ngModel)]="ollaSel">
+        <option value="">Seleccione…</option>
+        @for (olla of ollas(); track olla.id_olla) {
+          <option [value]="olla.id_olla">{{ olla.codigo_unico }} — {{ olla.nombre }} ({{ olla.distrito }})</option>
+        }
+      </select>
+    </div>
+
+    <button type="button" class="btn" (click)="seleccionar()">Ver auditoría</button>
+  </div>
+}
+
+<!-- ------------------------------------------------------------ resultados -->
+@if (idOlla()) {
+  <div class="fila-filtros">
+    <div class="campo">
+      <label class="etiqueta" for="a-desde">Resumen desde</label>
+      <input id="a-desde" name="res_desde" class="entrada" type="date" [(ngModel)]="filtroResumen.fecha_desde" />
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="a-hasta">Resumen hasta</label>
+      <input id="a-hasta" name="res_hasta" class="entrada" type="date" [(ngModel)]="filtroResumen.fecha_hasta" />
+    </div>
+    <button type="button" class="btn" (click)="cargarResumen()">Generar resumen</button>
+  </div>
+
+  @if (cargando() && !resumen()) {
+    <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando auditoría de la olla…</span></div>
+  } @else if (resumen(); as reporte) {
+    @if (reporte.olla; as olla) {
+      <div class="alerta alerta-info mb-3">
+        <div>
+          <strong>{{ olla.nombre }} ({{ olla.codigo_unico }})</strong>
+          <div class="chico">
+            {{ olla.distrito }} — {{ olla.provincia }}, {{ olla.departamento }} ·
+            {{ fEntero(olla.beneficiarios) }} beneficiarias(os) ·
+            {{ olla.atiende_hoy ? 'atiende hoy' : 'no atiende hoy' }} ·
+            {{ olla.activada ? 'olla activa' : 'olla desactivada' }}
+          </div>
+        </div>
+      </div>
+    }
+
+    <div class="rejilla-kpi mb-3">
+      <div class="kpi kpi-terracota">
+        <span class="kpi-valor">{{ fEntero(reporte.donaciones?.total) }}</span>
+        <span class="kpi-etiqueta">Donaciones</span>
+      </div>
+      <div class="kpi kpi-terracota">
+        <span class="kpi-valor">{{ fSoles(reporte.donaciones?.monto_total_soles) }}</span>
+        <span class="kpi-etiqueta">Monto donado</span>
+      </div>
+      <div class="kpi kpi-salvia">
+        <span class="kpi-valor">{{ fEntero(reporte.movimientos_por_tipo['ENTRADA'].cantidad_movimientos) }}</span>
+        <span class="kpi-etiqueta">Entradas</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-valor">{{ fEntero(reporte.movimientos_por_tipo['SALIDA'].cantidad_movimientos) }}</span>
+        <span class="kpi-etiqueta">Salidas</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-valor">{{ fEntero(reporte.lotes_activos_por_semaforo.VENCIDO) }}</span>
+        <span class="kpi-etiqueta">Lotes vencidos</span>
+      </div>
+      <div class="kpi kpi-salvia">
+        <span class="kpi-valor">{{ fEntero(reporte.despachos?.total_despachos) }}</span>
+        <span class="kpi-etiqueta">Despachos</span>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------------- stock -->
+    <div class="tarjeta mb-3">
+      <div class="tarjeta-titulo">Stock actual por insumo</div>
+      <div class="tabla-contenedor">
+        <table class="datos">
+          <thead>
+            <tr>
+              <th>Insumo</th>
+              <th>Categoría</th>
+              <th class="num">Stock vigente</th>
+              <th class="num">Mínimo</th>
+              <th class="num">Vencido</th>
+              <th>Próx. vencimiento</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of stock; track item.id_insumo) {
+              <tr>
+                <td class="negrita">{{ item.nombre }}</td>
+                <td class="tenue">{{ item.categoria }}</td>
+                <td class="num">{{ fDecimal(item.stock_actual) }} {{ item.unidad_base }}</td>
+                <td class="num">{{ fDecimal(item.stock_minimo) }}</td>
+                <td class="num">{{ fDecimal(item.stock_vencido) }}</td>
+                <td>{{ item.proximo_vencimiento ?? '—' }}</td>
+                <td>
+                  <span [class]="'chip ' + claseStock(item)">
+                    {{ item.stock_actual <= 0 ? 'Agotado' : item.alerta_stock_bajo ? 'Stock bajo' : 'Suficiente' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------- kardex -->
+    <div class="seccion-titulo mt-4">
+      <h3 class="mb-0">Kardex de movimientos</h3>
+    </div>
+
+    <div class="fila-filtros">
+      <div class="campo">
+        <label class="etiqueta" for="m-tipo">Tipo</label>
+        <select id="m-tipo" name="mov_tipo" class="selector" [(ngModel)]="filtroMov.tipo">
+          <option value="">Todos</option>
+          <option value="ENTRADA">Entradas</option>
+          <option value="SALIDA">Salidas</option>
+          <option value="DESCARTE">Descartes</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="m-desde">Desde</label>
+        <input id="m-desde" name="mov_desde" class="entrada" type="date" [(ngModel)]="filtroMov.fecha_desde" />
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="m-hasta">Hasta</label>
+        <input id="m-hasta" name="mov_hasta" class="entrada" type="date" [(ngModel)]="filtroMov.fecha_hasta" />
+      </div>
+      <button type="button" class="btn" (click)="cargarMovimientos()">Aplicar</button>
+    </div>
+
+    @if (movimientos().length === 0) {
+      <div class="vacio"><p>Sin movimientos para los filtros seleccionados.</p></div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="datos">
+          <thead>
+            <tr>
+              <th># Correlativo</th>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Insumo</th>
+              <th class="num">Cantidad</th>
+              <th class="num">Saldo</th>
+              <th>Motivo</th>
+              <th>Usuaria</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (movimiento of movimientos(); track movimiento.id_movimiento) {
+              <tr>
+                <td class="negrita">{{ movimiento.codigo_correlativo }}</td>
+                <td class="chico">{{ fFechaHora(movimiento.fecha_movimiento) }}</td>
+                <td><span [class]="'chip ' + claseTipo(movimiento.tipo_movimiento)">{{ movimiento.tipo_movimiento }}</span></td>
+                <td>{{ movimiento.insumo }}</td>
+                <td class="num negrita">{{ fDecimal(movimiento.cantidad) }} {{ movimiento.unidad_base }}</td>
+                <td class="num">{{ fDecimal(movimiento.saldo_anterior) }} → {{ fDecimal(movimiento.saldo_posterior) }}</td>
+                <td class="chico">{{ movimiento.motivo ?? '—' }}</td>
+                <td class="chico">{{ movimiento.usuario }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="tenue chico mt-2 mb-0">{{ movimientos().length }} movimiento(s) (máx. 200, más recientes primero)</p>
+    }
+  }
+}

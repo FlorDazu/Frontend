@@ -1,0 +1,381 @@
+<div class="seccion-titulo">
+  <div>
+    <h1>Donantes y donaciones</h1>
+    <p class="tenue mb-0">Registro de apoyos monetarios y en especie con trazabilidad</p>
+  </div>
+  <div class="fila envolver">
+    @if (pestana === 'donaciones') {
+      <button type="button" class="btn btn-mini" [class.btn-fantasma]="!mostrarForm"
+              (click)="alternarFormDonacion()">
+        + Registrar donación
+      </button>
+    } @else {
+      <button type="button" class="btn btn-mini" [class.btn-fantasma]="!mostrarFormDonante"
+              (click)="alternarFormDonante()">
+        + Registrar donante
+      </button>
+    }
+  </div>
+</div>
+
+<div class="pestanas">
+  <button type="button" class="pestana" [class.activa]="pestana === 'donaciones'" (click)="cambiarPestana('donaciones')">
+    Donaciones
+  </button>
+  <button type="button" class="pestana" [class.activa]="pestana === 'donantes'" (click)="cambiarPestana('donantes')">
+    Donantes
+  </button>
+</div>
+
+@if (error()) {
+  <div class="alerta alerta-error mb-3">{{ error() }}</div>
+}
+
+<!-- ============================================================ DONACIONES -->
+@if (pestana === 'donaciones') {
+  @if (mostrarForm) {
+    <div class="tarjeta mb-3">
+      <div class="tarjeta-titulo">
+        Registrar donación
+        <button type="button" class="btn btn-fantasma btn-mini" (click)="cerrarFormDonacion()">Cancelar</button>
+      </div>
+
+      @if (errorForm()) {
+        <div class="error-form">{{ errorForm() }}</div>
+      }
+
+      <form (ngSubmit)="enviarDonacion()" #donacionForm="ngForm" novalidate>
+        <div class="grupo-form mb-3">
+          <div class="campo">
+            <label class="etiqueta" for="tipo">Tipo de donación <span class="req">*</span></label>
+            <select id="tipo" name="tipo_donacion" class="selector" [(ngModel)]="form.tipo_donacion">
+              <option value="ESPECIE">En especie (insumos)</option>
+              <option value="MONETARIA">Monetaria (soles)</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="donante">Donante (opcional)</label>
+            <select id="donante" name="id_donante" class="selector" [(ngModel)]="form.id_donante">
+              <option value="">Sin donante identificado</option>
+              @for (donante of donantes(); track donante.id_donante) {
+                <option [value]="donante.id_donante">{{ donante.nombre_razon_social }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="comprobante">Comprobante</label>
+            <input id="comprobante" name="comprobante" class="entrada" type="text" maxlength="80"
+                   placeholder="Ej.: BOL-0045" [(ngModel)]="form.comprobante" />
+          </div>
+        </div>
+
+        <div class="campo mb-3">
+          <label class="etiqueta" for="descripcion">Descripción <span class="req">*</span></label>
+          <input id="descripcion" name="descripcion" class="entrada" type="text" maxlength="300"
+                 placeholder="Ej.: Cajas de aceite vegetal, leche y conservas"
+                 [(ngModel)]="form.descripcion" required />
+        </div>
+
+        @if (form.tipo_donacion === 'MONETARIA') {
+          <div class="grupo-form mb-3">
+            <div class="campo">
+              <label class="etiqueta" for="monto">Monto en soles <span class="req">*</span></label>
+              <input id="monto" name="monto_soles" class="entrada" type="number" min="0.01" step="0.01"
+                     placeholder="Ej.: 150" [(ngModel)]="form.monto_soles" />
+            </div>
+          </div>
+          <div class="alerta alerta-info mb-3">
+            Las donaciones monetarias no generan lotes: solo quedan registradas con su monto y comprobante.
+          </div>
+        } @else {
+          <div class="tarjeta-titulo">Insumos donados</div>
+
+          @for (fila of items; track $index; let i = $index) {
+            <div class="grupo-form mb-2" style="grid-template-columns: 2fr 1fr 1fr auto; align-items: end">
+              <div class="campo">
+                <label class="etiqueta" [for]="'item-insumo-' + i">Insumo</label>
+                <select class="selector" [id]="'item-insumo-' + i" [name]="'item_insumo_' + i"
+                        [(ngModel)]="fila.id_insumo">
+                  <option [value]="null" disabled>Seleccione…</option>
+                  @for (insumo of insumos(); track insumo.id_insumo) {
+                    <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ insumo.unidad_base }})</option>
+                  }
+                </select>
+              </div>
+              <div class="campo">
+                <label class="etiqueta" [for]="'item-cant-' + i">Cantidad</label>
+                <input class="entrada" type="number" min="0.01" step="0.01" [id]="'item-cant-' + i"
+                       [name]="'item_cantidad_' + i" [(ngModel)]="fila.cantidad" />
+              </div>
+              <div class="campo">
+                <label class="etiqueta" [for]="'item-venc-' + i">Vencimiento</label>
+                <input class="entrada" type="date" [id]="'item-venc-' + i" [name]="'item_venc_' + i"
+                       [(ngModel)]="fila.fecha_vencimiento" />
+              </div>
+              <div class="campo">
+                <button type="button" class="btn btn-fantasma btn-mini" (click)="quitarFila(i)"
+                        [disabled]="items.length === 1" aria-label="Quitar ítem">× Quitar</button>
+              </div>
+            </div>
+            @if (fila.id_insumo && insumoRequiereVencimiento(fila.id_insumo) && !fila.fecha_vencimiento) {
+              <div class="campo-ayuda texto-error mb-2">
+                Este insumo requiere fecha de vencimiento.
+              </div>
+            }
+          }
+
+          <button type="button" class="btn btn-suave btn-mini mb-3" (click)="agregarFila()">+ Agregar otro insumo</button>
+
+          <div class="alerta alerta-info mb-3">
+            Cada insumo genera un lote con orden PEPS; el semáforo de vencimiento se calcula automáticamente.
+          </div>
+        }
+
+        <button type="submit" class="btn btn-exito" [disabled]="guardando()">
+          {{ guardando() ? 'Registrando…' : 'Registrar donación' }}
+        </button>
+      </form>
+    </div>
+  }
+
+  <div class="fila-filtros">
+    <div class="campo">
+      <label class="etiqueta" for="f-tipo">Tipo</label>
+      <select id="f-tipo" name="filtro_tipo_donacion" class="selector" [(ngModel)]="filtroTipoDonacion" (ngModelChange)="cargarDonaciones()">
+        <option value="">Todas</option>
+        <option value="ESPECIE">En especie</option>
+        <option value="MONETARIA">Monetarias</option>
+      </select>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando donaciones…</span></div>
+  } @else if (donaciones().length === 0) {
+    <div class="vacio">
+      <h3>Aún no hay donaciones</h3>
+      <p>Registre la primera donación en especie o monetaria de su olla.</p>
+      <button type="button" class="btn" (click)="mostrarForm = true">Registrar donación</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="datos">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Donante</th>
+            <th>Descripción</th>
+            <th class="num">Monto</th>
+            <th class="num">Ítems</th>
+            <th class="acciones">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (donacion of donaciones(); track donacion.id_donacion) {
+            <tr>
+              <td>{{ fFechaHora(donacion.fecha_donacion) }}</td>
+              <td>
+                <span [class]="'chip ' + (donacion.tipo_donacion === 'MONETARIA' ? 'chip-ambar' : 'chip-verde')">
+                  {{ donacion.tipo_donacion === 'MONETARIA' ? 'Monetaria' : 'En especie' }}
+                </span>
+              </td>
+              <td>
+                {{ donacion.donante ?? 'Sin donante identificado' }}
+                @if (donacion.tipo_donante) {
+                  <div class="tenue chico">{{ etiquetaTipoDonante(donacion.tipo_donante) }}</div>
+                }
+              </td>
+              <td>
+                {{ donacion.descripcion }}
+                @if (donacion.comprobante) {
+                  <div class="tenue chico">Comprobante: {{ donacion.comprobante }}</div>
+                }
+              </td>
+              <td class="num negrita">{{ donacion.monto_soles !== null ? fSoles(donacion.monto_soles) : '—' }}</td>
+              <td class="num">{{ donacion.items.length }}</td>
+              <td class="acciones">
+                @if (donacion.items.length > 0) {
+                  <button type="button" class="btn btn-suave btn-mini" (click)="alternarDetalle(donacion.id_donacion)">
+                    {{ donacionAbierta === donacion.id_donacion ? 'Ocultar' : 'Ver lotes' }}
+                  </button>
+                } @else {
+                  <span class="tenue chico">—</span>
+                }
+              </td>
+            </tr>
+            @if (donacionAbierta === donacion.id_donacion) {
+              <tr>
+                <td colspan="7" style="background: #fdfaf5">
+                  <div class="negrita mb-2">Lotes generados por esta donación</div>
+                  <div class="tabla-contenedor">
+                    <table class="datos">
+                      <thead>
+                        <tr>
+                          <th>Lote</th>
+                          <th>Insumo</th>
+                          <th class="num">Inicial</th>
+                          <th class="num">Disponible</th>
+                          <th>Vencimiento</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of donacion.items; track item.id_lote) {
+                          <tr>
+                            <td class="negrita">{{ item.codigo_lote }}</td>
+                            <td>{{ item.insumo }}</td>
+                            <td class="num">{{ fDecimal(item.cantidad_inicial) }} {{ item.unidad_base }}</td>
+                            <td class="num">{{ fDecimal(item.cantidad_disponible) }}</td>
+                            <td>{{ item.fecha_vencimiento ?? 'Sin vencimiento' }}</td>
+                            <td>{{ item.estado }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
+
+<!-- ============================================================== DONANTES -->
+@if (pestana === 'donantes') {
+  @if (mostrarFormDonante) {
+    <div class="tarjeta mb-3">
+      <div class="tarjeta-titulo">
+        Registrar donante
+        <button type="button" class="btn btn-fantasma btn-mini" (click)="cerrarFormDonante()">Cancelar</button>
+      </div>
+
+      @if (errorForm()) {
+        <div class="error-form">{{ errorForm() }}</div>
+      }
+
+      <form (ngSubmit)="enviarDonante()" #donanteForm="ngForm" novalidate>
+        <div class="grupo-form mb-3">
+          <div class="campo">
+            <label class="etiqueta" for="d-tipo">Tipo de donante <span class="req">*</span></label>
+            <select id="d-tipo" name="tipo_donante" class="selector" [(ngModel)]="formDonante.tipo_donante">
+              @for (tipo of tiposDonante; track tipo) {
+                <option [value]="tipo">{{ etiquetaTipoDonante(tipo) }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="d-nombre">Nombre o razón social <span class="req">*</span></label>
+            <input id="d-nombre" name="nombre_razon_social" class="entrada" type="text" maxlength="150"
+                   placeholder="Ej.: Asociación de Comerciantes" [(ngModel)]="formDonante.nombre_razon_social" required />
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="d-doc">Documento (RUC/DNI)</label>
+            <input id="d-doc" name="documento" class="entrada" type="text" maxlength="20"
+                   placeholder="Ej.: 20512345678" [(ngModel)]="formDonante.documento" />
+          </div>
+        </div>
+        <div class="grupo-form mb-3">
+          <div class="campo">
+            <label class="etiqueta" for="d-tel">Teléfono</label>
+            <input id="d-tel" name="telefono" class="entrada" type="tel" maxlength="20"
+                   placeholder="Ej.: 981234567" [(ngModel)]="formDonante.telefono" />
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="d-dir">Dirección</label>
+            <input id="d-dir" name="direccion" class="entrada" type="text" maxlength="250"
+                   placeholder="Ej.: Av. Canto Grande Cdra. 10" [(ngModel)]="formDonante.direccion" />
+          </div>
+          <div class="campo">
+            <label class="etiqueta">Frecuencia</label>
+            <label class="casilla-fila" style="min-height: 42px">
+              <input type="checkbox" name="es_frecuente" [(ngModel)]="formDonante.es_frecuente" />
+              Es un donante frecuente
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-exito" [disabled]="guardando()">
+          {{ guardando() ? 'Registrando…' : 'Registrar donante' }}
+        </button>
+      </form>
+    </div>
+  }
+
+  <div class="fila-filtros">
+    <div class="campo">
+      <label class="etiqueta" for="fd-tipo">Tipo</label>
+      <select id="fd-tipo" name="filtro_tipo_donante" class="selector" [(ngModel)]="filtroTipoDonante" (ngModelChange)="cargarDonantes()">
+        <option value="">Todos</option>
+        @for (tipo of tiposDonante; track tipo) {
+          <option [value]="tipo">{{ etiquetaTipoDonante(tipo) }}</option>
+        }
+      </select>
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="fd-frec">Frecuencia</label>
+      <select id="fd-frec" name="filtro_frecuente" class="selector" [(ngModel)]="filtroFrecuente" (ngModelChange)="cargarDonantes()">
+        <option value="">Todos</option>
+        <option value="1">Frecuentes</option>
+        <option value="0">Ocasionales</option>
+      </select>
+    </div>
+    <div class="campo" style="flex: 2; max-width: 320px">
+      <label class="etiqueta" for="fd-q">Buscar</label>
+      <input id="fd-q" name="busqueda_donante" class="entrada" type="search" placeholder="Nombre o documento"
+             [(ngModel)]="busquedaDonante" (keyup.enter)="cargarDonantes()" />
+    </div>
+    <button type="button" class="btn" (click)="cargarDonantes()">Buscar</button>
+  </div>
+
+  @if (cargando()) {
+    <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando donantes…</span></div>
+  } @else if (donantes().length === 0) {
+    <div class="vacio">
+      <h3>Sin donantes registrados</h3>
+      <p>Registre a las personas, empresas, mercados o instituciones que apoyan a su olla.</p>
+      <button type="button" class="btn" (click)="mostrarFormDonante = true">Registrar donante</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="datos">
+        <thead>
+          <tr>
+            <th>Donante</th>
+            <th>Tipo</th>
+            <th>Documento</th>
+            <th>Teléfono</th>
+            <th>Dirección</th>
+            <th class="num">Donaciones</th>
+            <th>Frecuente</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (donante of donantes(); track donante.id_donante) {
+            <tr>
+              <td class="negrita">
+                {{ donante.nombre_razon_social }}
+                <div class="tenue chico">Registrado {{ fFechaHora(donante.fecha_registro) }}</div>
+              </td>
+              <td><span class="chip chip-terracota">{{ etiquetaTipoDonante(donante.tipo_donante) }}</span></td>
+              <td>{{ donante.documento ?? '—' }}</td>
+              <td>{{ donante.telefono ?? '—' }}</td>
+              <td>{{ donante.direccion ?? '—' }}</td>
+              <td class="num negrita">{{ donante.total_donaciones }}</td>
+              <td>
+                @if (donante.es_frecuente) {
+                  <span class="chip chip-verde">Frecuente</span>
+                } @else {
+                  <span class="chip chip-neutro">Ocasional</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

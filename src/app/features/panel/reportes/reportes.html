@@ -1,0 +1,265 @@
+<div class="seccion-titulo">
+  <div>
+    <h1>Kardex y reportes</h1>
+    <p class="tenue mb-0">Historial de movimientos, resumen analítico y exportación CSV</p>
+  </div>
+</div>
+
+<div class="pestanas">
+  <button type="button" class="pestana" [class.activa]="pestana === 'kardex'" (click)="cambiarPestana('kardex')">
+    Kardex de movimientos
+  </button>
+  <button type="button" class="pestana" [class.activa]="pestana === 'resumen'" (click)="cambiarPestana('resumen')">
+    Resumen analítico
+  </button>
+  <button type="button" class="pestana" [class.activa]="pestana === 'csv'" (click)="cambiarPestana('csv')">
+    Exportar CSV
+  </button>
+</div>
+
+@if (error()) {
+  <div class="alerta alerta-error mb-3">{{ error() }}</div>
+}
+
+<!-- ================================================================ KARDEX -->
+@if (pestana === 'kardex') {
+  <div class="fila-filtros">
+    <div class="campo">
+      <label class="etiqueta" for="k-tipo">Tipo de movimiento</label>
+      <select id="k-tipo" name="kardex_tipo" class="selector" [(ngModel)]="filtroKardex.tipo" (ngModelChange)="cargarKardex()">
+        <option value="">Todos</option>
+        <option value="ENTRADA">Entradas (#E-)</option>
+        <option value="SALIDA">Salidas (#S-)</option>
+        <option value="DESCARTE">Descartes (#D-)</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="k-desde">Fecha desde</label>
+      <input id="k-desde" name="kardex_desde" class="entrada" type="date" [(ngModel)]="filtroKardex.fecha_desde" (change)="cargarKardex()" />
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="k-hasta">Fecha hasta</label>
+      <input id="k-hasta" name="kardex_hasta" class="entrada" type="date" [(ngModel)]="filtroKardex.fecha_hasta" (change)="cargarKardex()" />
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="k-limite">Máximo</label>
+      <select id="k-limite" name="kardex_limite" class="selector" [(ngModel)]="filtroKardex.limite" (ngModelChange)="cargarKardex()">
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+        <option [value]="200">200</option>
+        <option [value]="500">500</option>
+      </select>
+    </div>
+    <button type="button" class="btn" (click)="cargarKardex()">Aplicar</button>
+  </div>
+
+  @if (cargandoKardex()) {
+    <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando kardex…</span></div>
+  } @else if (movimientos().length === 0) {
+    <div class="vacio">
+      <h3>Sin movimientos</h3>
+      <p>No hay movimientos de inventario con los filtros seleccionados.</p>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="datos">
+        <thead>
+          <tr>
+            <th># Correlativo</th>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Insumo</th>
+            <th>Lote</th>
+            <th class="num">Cantidad</th>
+            <th class="num">Saldo</th>
+            <th>Motivo</th>
+            <th>Usuaria</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (movimiento of movimientos(); track movimiento.id_movimiento) {
+            <tr>
+              <td class="negrita">{{ movimiento.codigo_correlativo }}</td>
+              <td>{{ fFechaHora(movimiento.fecha_movimiento) }}</td>
+              <td><span [class]="'chip ' + claseTipo(movimiento.tipo_movimiento)">{{ movimiento.tipo_movimiento }}</span></td>
+              <td>
+                {{ movimiento.insumo }}
+                <div class="tenue chico">{{ movimiento.unidad_base }}</div>
+              </td>
+              <td>{{ movimiento.codigo_lote ?? '—' }}</td>
+              <td class="num negrita">{{ fDecimal(movimiento.cantidad) }}</td>
+              <td class="num">{{ fDecimal(movimiento.saldo_anterior) }} → {{ fDecimal(movimiento.saldo_posterior) }}</td>
+              <td class="chico">{{ movimiento.motivo ?? '—' }}</td>
+              <td class="chico">{{ movimiento.usuario }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="tenue chico mt-2 mb-0">{{ movimientos().length }} movimiento(s) · los más recientes primero</p>
+  }
+}
+
+<!-- ============================================================== RESUMEN -->
+@if (pestana === 'resumen') {
+  <div class="fila-filtros">
+    <div class="campo">
+      <label class="etiqueta" for="r-desde">Fecha desde</label>
+      <input id="r-desde" name="resumen_desde" class="entrada" type="date" [(ngModel)]="filtroResumen.fecha_desde" />
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="r-hasta">Fecha hasta</label>
+      <input id="r-hasta" name="resumen_hasta" class="entrada" type="date" [(ngModel)]="filtroResumen.fecha_hasta" />
+    </div>
+    <button type="button" class="btn" (click)="cargarResumen()">Generar resumen</button>
+  </div>
+
+  @if (cargandoResumen()) {
+    <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Generando resumen…</span></div>
+  } @else if (resumen(); as reporte) {
+    @if (reporte.olla; as olla) {
+      <div class="alerta alerta-info mb-3">
+        <div>
+          <strong>{{ olla.nombre }} ({{ olla.codigo_unico }})</strong>
+          <div class="chico">
+            {{ olla.distrito }}, {{ olla.provincia }} — {{ fEntero(olla.beneficiarios) }} beneficiarias(os) ·
+            {{ olla.atiende_hoy ? 'atiende hoy' : 'no atiende hoy' }}
+          </div>
+        </div>
+      </div>
+    }
+
+    <div class="rejilla-kpi mb-3">
+      <div class="kpi kpi-terracota">
+        <span class="kpi-valor">{{ fEntero(reporte.donaciones?.total) }}</span>
+        <span class="kpi-etiqueta">Donaciones en el periodo</span>
+      </div>
+      <div class="kpi kpi-terracota">
+        <span class="kpi-valor">{{ fSoles(reporte.donaciones?.monto_total_soles) }}</span>
+        <span class="kpi-etiqueta">Monto monetario</span>
+      </div>
+      <div class="kpi kpi-salvia">
+        <span class="kpi-valor">{{ fEntero(reporte.despachos?.total_despachos) }}</span>
+        <span class="kpi-etiqueta">Despachos de recetas</span>
+      </div>
+      <div class="kpi kpi-salvia">
+        <span class="kpi-valor">{{ fEntero(reporte.despachos?.raciones_servidas) }}</span>
+        <span class="kpi-etiqueta">Raciones servidas</span>
+      </div>
+    </div>
+
+    <div class="rejilla mb-3">
+      <article class="tarjeta">
+        <div class="tarjeta-titulo">Donaciones</div>
+        <div class="dato-fila"><span class="tenue">Total</span><span class="valor">{{ fEntero(reporte.donaciones?.total) }}</span></div>
+        <div class="dato-fila"><span class="tenue">En especie</span><span class="valor">{{ fEntero(reporte.donaciones?.en_especie) }}</span></div>
+        <div class="dato-fila"><span class="tenue">Monetarias</span><span class="valor">{{ fEntero(reporte.donaciones?.monetarias) }}</span></div>
+        <div class="dato-fila"><span class="tenue">Donantes distintos</span><span class="valor">{{ fEntero(reporte.donaciones?.donantes_distintos) }}</span></div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="tarjeta-titulo">Movimientos por tipo</div>
+        <div class="dato-fila">
+          <span><span class="chip chip-verde">ENTRADA</span></span>
+          <span class="valor">{{ fEntero(reporte.movimientos_por_tipo['ENTRADA'].cantidad_movimientos) }} · {{ fDecimal(reporte.movimientos_por_tipo['ENTRADA'].cantidad_total) }}</span>
+        </div>
+        <div class="dato-fila">
+          <span><span class="chip chip-ambar">SALIDA</span></span>
+          <span class="valor">{{ fEntero(reporte.movimientos_por_tipo['SALIDA'].cantidad_movimientos) }} · {{ fDecimal(reporte.movimientos_por_tipo['SALIDA'].cantidad_total) }}</span>
+        </div>
+        <div class="dato-fila">
+          <span><span class="chip chip-rojo">DESCARTE</span></span>
+          <span class="valor">{{ fEntero(reporte.movimientos_por_tipo['DESCARTE'].cantidad_movimientos) }} · {{ fDecimal(reporte.movimientos_por_tipo['DESCARTE'].cantidad_total) }}</span>
+        </div>
+        <p class="campo-ayuda mb-0">movimientos · cantidad total</p>
+      </article>
+
+      <article class="tarjeta">
+        <div class="tarjeta-titulo">Semáforo de lotes</div>
+        <div class="dato-fila">
+          <span class="chip chip-verde">VIGENTES</span>
+          <span class="valor">{{ fEntero(reporte.lotes_activos_por_semaforo.VIGENTE) }}</span>
+        </div>
+        <div class="dato-fila">
+          <span class="chip chip-ambar">POR VENCER</span>
+          <span class="valor">{{ fEntero(reporte.lotes_activos_por_semaforo.POR_VENCER) }}</span>
+        </div>
+        <div class="dato-fila">
+          <span class="chip chip-rojo">VENCIDOS</span>
+          <span class="valor">{{ fEntero(reporte.lotes_activos_por_semaforo.VENCIDO) }}</span>
+        </div>
+      </article>
+    </div>
+
+    @if (reporte.insumos_stock_bajo.length > 0) {
+      <div class="tarjeta">
+        <div class="tarjeta-titulo">Insumos con stock bajo</div>
+        <div class="tabla-contenedor">
+          <table class="datos">
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th class="num">Stock actual</th>
+                <th class="num">Mínimo</th>
+                <th class="num">Faltante</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of reporte.insumos_stock_bajo; track item.id_insumo) {
+                <tr>
+                  <td class="negrita">{{ item.insumo }}</td>
+                  <td class="num">{{ fDecimal(item.stock_actual) }} {{ item.unidad_base }}</td>
+                  <td class="num">{{ fDecimal(item.stock_minimo) }}</td>
+                  <td class="num texto-error negrita">{{ fDecimal(item.stock_minimo - item.stock_actual) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    } @else {
+      <div class="alerta alerta-ok">Ningún insumo está por debajo del stock mínimo.</div>
+    }
+  }
+}
+
+<!-- ================================================================== CSV -->
+@if (pestana === 'csv') {
+  <div class="tarjeta" style="max-width: 720px">
+    <div class="tarjeta-titulo">Descargar reportes en CSV</div>
+    <p class="tenue chico">
+      El archivo usa punto y coma como separador y codificación UTF-8 con BOM, de modo que Excel
+      reconoce tildes y ñ sin problemas. Se descarga con su sesión activa.
+    </p>
+
+    <form (ngSubmit)="descargarCsv()" #csvForm="ngForm">
+      <div class="grupo-form mb-3">
+        <div class="campo">
+          <label class="etiqueta" for="csv-tipo">Reporte</label>
+          <select id="csv-tipo" name="csv_tipo" class="selector" [(ngModel)]="csvTipo">
+            <option value="movimientos">Kardex de movimientos</option>
+            <option value="stock">Stock de inventario</option>
+            <option value="donaciones">Donaciones recibidas</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="etiqueta" for="csv-desde">Fecha desde</label>
+          <input id="csv-desde" name="csv_desde" class="entrada" type="date" [(ngModel)]="filtroCsv.fecha_desde" />
+        </div>
+        <div class="campo">
+          <label class="etiqueta" for="csv-hasta">Fecha hasta</label>
+          <input id="csv-hasta" name="csv_hasta" class="entrada" type="date" [(ngModel)]="filtroCsv.fecha_hasta" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn" [disabled]="descargando()">
+        {{ descargando() ? 'Generando archivo…' : 'Descargar CSV' }}
+      </button>
+    </form>
+
+    <div class="alerta alerta-info mt-3">
+      El nombre del archivo se sugiere automáticamente según el reporte elegido y la fecha, por
+      ejemplo <strong>ayni_movimientos_20261120.csv</strong>.
+    </div>
+  </div>
+}

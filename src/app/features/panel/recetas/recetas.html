@@ -1,0 +1,184 @@
+<div class="seccion-titulo">
+  <div>
+    <h1>Recetas y despacho</h1>
+    <p class="tenue mb-0">Cálculo proporcional, despacho atómico y recetario externo</p>
+  </div>
+  <div class="fila envolver medio">
+    <div class="campo" style="min-width: 150px">
+      <label class="etiqueta" for="raciones">Raciones a preparar</label>
+      <input id="raciones" name="raciones" class="entrada" type="number" min="1" max="10000"
+             [(ngModel)]="raciones" (change)="cargar()" (keyup.enter)="cargar()" />
+    </div>
+    <button type="button" class="btn btn-mini" (click)="cargar()">Recalcular</button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="alerta alerta-error mb-3">{{ error() }}</div>
+}
+
+@if (cargando()) {
+  <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Calculando recetas con el stock vigente…</span></div>
+} @else if (recetas().length === 0) {
+  <div class="vacio">
+    <h3>No hay recetas activas</h3>
+    <p>Contacte al administrador para configurar el recetario de su olla.</p>
+  </div>
+} @else {
+  <div class="rejilla-lista">
+    @for (receta of recetas(); track receta.id_receta) {
+      <article class="tarjeta">
+        <div class="receta-cabecera">
+          <div>
+            <h3>{{ receta.nombre }}</h3>
+            @if (receta.descripcion) {
+              <p class="tenue chico mb-0">{{ receta.descripcion }}</p>
+            }
+          </div>
+          @if (receta.se_puede_preparar) {
+            <span class="chip chip-verde">Se puede preparar</span>
+          } @else {
+            <span class="chip chip-rojo">Faltan insumos</span>
+          }
+        </div>
+
+        <div class="fila envolver mb-2">
+          <span class="chip chip-neutro">{{ fEntero(receta.raciones_calculadas) }} raciones</span>
+          <span class="chip chip-ambar">Base: {{ fEntero(receta.raciones_base) }}</span>
+          <span class="chip chip-terracota">Máximo: {{ fEntero(receta.raciones_maximas) }}</span>
+        </div>
+
+        @if (receta.ingredientes.length === 0) {
+          <div class="alerta alerta-info">Esta receta no tiene ingredientes configurados.</div>
+        } @else {
+          <div class="tabla-contenedor mb-3">
+            <table class="datos" style="min-width: 380px">
+              <thead>
+                <tr>
+                  <th>Ingrediente</th>
+                  <th class="num">Requerido</th>
+                  <th class="num">En almacén</th>
+                  <th>Alcanza</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ingrediente of receta.ingredientes; track ingrediente.id_insumo) {
+                  <tr>
+                    <td>{{ ingrediente.insumo }}</td>
+                    <td class="num negrita">
+                      {{ fDecimal(ingrediente.cantidad_requerida) }} {{ ingrediente.unidad_base }}
+                    </td>
+                    <td class="num">{{ fDecimal(ingrediente.stock_vigente) }}</td>
+                    <td>
+                      @if (ingrediente.alcanza) {
+                        <span class="chip chip-verde">Sí</span>
+                      } @else {
+                        <span class="chip chip-rojo">Falta {{ fDecimal(ingrediente.faltante) }}</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <button type="button" class="btn btn-exito btn-ancho"
+                [disabled]="!receta.se_puede_preparar || despachando()"
+                (click)="despachar(receta)">
+          {{ despachando() ? 'Despachando…' : 'Despachar ' + receta.raciones_calculadas + ' raciones' }}
+        </button>
+        <p class="campo-ayuda mt-1 mb-0">
+          Despacho atómico: si algún insumo falta, no se descuenta ningún ingrediente.
+        </p>
+      </article>
+    }
+  </div>
+}
+
+<!-- --------------------------------------------------------- recetas externas -->
+<div class="tarjeta mt-4">
+  <div class="tarjeta-titulo">Buscar recetas externas</div>
+
+  <form class="fila-filtros" (ngSubmit)="buscarExternas()" #externaForm="ngForm" style="margin-bottom: 0">
+    <div class="campo" style="flex: 2; max-width: 420px">
+      <label class="etiqueta" for="q">Ingrediente o plato</label>
+      <input id="q" name="q" class="entrada" type="search" maxlength="80"
+             placeholder="Ej.: lentejas, pollo, arroz, papa, atún, sopa"
+             [(ngModel)]="consulta" />
+    </div>
+    <div class="fila">
+      <button type="submit" class="btn" [disabled]="buscandoExterna()">
+        {{ buscandoExterna() ? 'Buscando…' : 'Buscar' }}
+      </button>
+      @if (externas()) {
+        <button type="button" class="btn btn-fantasma" (click)="cerrarExternas()">Cerrar</button>
+      }
+    </div>
+  </form>
+
+  @if (errorExterno()) {
+    <div class="error-form mt-3">{{ errorExterno() }}</div>
+  }
+
+  @if (externas(); as recetasExternas) {
+    <div class="mt-3">
+      <div class="separar envolver mb-2">
+        <span class="chip chip-terracota">Fuente: {{ fuenteExterna() }}</span>
+        <span class="tenue chico">{{ recetasExternas.length }} sugerencia(s)</span>
+      </div>
+
+      @if (avisoExterno()) {
+        <div class="alerta alerta-info mb-3">{{ avisoExterno() }}</div>
+      }
+
+      @if (recetasExternas.length === 0) {
+        <div class="vacio"><p>No se encontraron sugerencias.</p></div>
+      } @else {
+        <div class="rejilla-lista">
+          @for (externa of recetasExternas; track $index) {
+            <article class="ficha-olla">
+              <h3 class="mb-1">{{ externa.title }}</h3>
+              @if (externa.servings) {
+                <span class="chip chip-ambar">{{ externa.servings }}</span>
+              }
+
+              @if (externa.ingredients.length) {
+                <strong class="chico mt-2">Ingredientes</strong>
+                <ul class="lista-consejos">
+                  @for (ingrediente of externa.ingredients; track $index) {
+                    <li>{{ ingrediente }}</li>
+                  }
+                </ul>
+              }
+
+              @if (externa.pasos.length) {
+                <strong class="chico">Preparación</strong>
+                <ol class="lista-consejos">
+                  @for (paso of externa.pasos; track $index) {
+                    <li>{{ paso }}</li>
+                  }
+                </ol>
+              } @else if (externa.instructions) {
+                <strong class="chico">Preparación</strong>
+                <p class="chico">{{ externa.instructions }}</p>
+              }
+
+              @if (externa.nutrition_nota) {
+                <div class="campo-ayuda">{{ externa.nutrition_nota }}</div>
+              } @else {
+                @if (clavesNutricion(externa.nutrition).length > 0) {
+                  <div class="fila envolver mt-1">
+                    @for (dato of clavesNutricion(externa.nutrition); track dato.clave) {
+                      <span class="chip chip-neutro">{{ dato.clave }}: {{ dato.valor }}</span>
+                    }
+                  </div>
+                }
+              }
+            </article>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

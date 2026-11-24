@@ -1,0 +1,111 @@
+<a class="salto-contenido" href="#contenido">Saltar al contenido principal</a>
+
+<header class="cabecera">
+  <div class="envoltorio cabecera-fila">
+    <a routerLink="/" class="marca" (click)="cerrarMenu()">
+      <img
+        class="marca-logo"
+        src="images/LogoAYNI.png"
+        alt="Logotipo de AYNI"
+        width="1024"
+        height="572"
+      />
+      <span class="marca-texto">
+        <strong class="marca-nombre">AYNI</strong>
+        <small class="marca-sub">Sistema Comunitario de Ollas Comunes</small>
+      </span>
+    </a>
+
+    <button
+      type="button"
+      class="btn-menu btn-menu-cabecera"
+      [attr.aria-expanded]="menuAbierto()"
+      aria-controls="nav-principal"
+      aria-label="Abrir el menú de navegación"
+      (click)="alternarMenu()"
+    >
+      <span aria-hidden="true">☰</span>
+    </button>
+
+    <nav id="nav-principal" class="enlaces" [class.abierto]="menuAbierto()" aria-label="Navegación principal">
+      <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }" (click)="cerrarMenu()">Inicio</a>
+      <a routerLink="/nosotros" routerLinkActive="activo" (click)="cerrarMenu()">Nosotros</a>
+      <a routerLink="/ollas" routerLinkActive="activo" (click)="cerrarMenu()">Buscar Ollas</a>
+      <a routerLink="/contactanos" routerLinkActive="activo" (click)="cerrarMenu()">Contáctanos</a>
+    </nav>
+
+    <div class="acciones-cabecera">
+      <app-tamano-letra />
+
+      <a routerLink="/registro" class="btn btn-fantasma btn-alto" (click)="cerrarMenu()">Activar mi Olla</a>
+
+      @if (auth.autenticado()) {
+        <a
+          class="btn btn-alto"
+          [routerLink]="auth.esAdmin() ? '/admin/ollas' : '/panel/mi-olla'"
+          (click)="cerrarMenu()"
+          >Ir al Panel</a
+        >
+      } @else {
+        <a routerLink="/login" class="btn btn-alto" (click)="cerrarMenu()">Iniciar Sesión</a>
+      }
+    </div>
+  </div>
+</header>
+
+<main id="contenido">
+  <router-outlet />
+</main>
+
+<footer class="pie">
+  <div class="envoltorio pie-rejilla">
+    <div class="pie-col pie-identidad">
+      <span class="pie-marca">
+        <img class="marca-logo" src="images/LogoAYNI.png" alt="Logotipo de AYNI" width="1024" height="572" />
+        <strong>AYNI</strong>
+      </span>
+      <p class="pie-texto">
+        Red solidaria que une a dirigentas, donantes y voluntarias para que ninguna familia se quede
+        sin un plato caliente. Trabajamos con reciprocidad, transparencia y puertas abiertas al barrio.
+      </p>
+      <span class="chip chip-verde">Accesibilidad WCAG 2.1 AA</span>
+    </div>
+
+    <nav class="pie-col" aria-label="Navegación del pie de página">
+      <h2 class="pie-titulo">Navegación</h2>
+      <a routerLink="/">Inicio</a>
+      <a routerLink="/nosotros">Nosotros</a>
+      <a routerLink="/ollas">Buscar Ollas</a>
+      <a routerLink="/contactanos">Contáctanos</a>
+    </nav>
+
+    <nav class="pie-col" aria-label="Participa en AYNI">
+      <h2 class="pie-titulo">Participa</h2>
+      <a routerLink="/registrar-olla">Registrar mi Olla</a>
+      <a routerLink="/registro">Activar Cuenta Dirigenta</a>
+      <a routerLink="/login">Iniciar Sesión</a>
+    </nav>
+
+    <div class="pie-col">
+      <h2 class="pie-titulo">Contacto</h2>
+      <p class="pie-dato">
+        <span class="pie-etiqueta">Ubicación</span>
+        Huancayo, Junín — Perú
+      </p>
+      <p class="pie-dato">
+        <span class="pie-etiqueta">Correo</span>
+        <a href="mailto:contacto@ayni-ollas.org">contacto@ayni-ollas.org</a>
+      </p>
+      <p class="pie-dato">
+        <span class="pie-etiqueta">Orientación comunitaria</span>
+        <a href="tel:+5164512345">(064) 512-345</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="pie-base">
+    <div class="envoltorio">
+      © {{ anio }} AYNI · Sistema Comunitario de Ollas Comunes. Todos los derechos reservados.
+    </div>
+  </div>
+</footer>

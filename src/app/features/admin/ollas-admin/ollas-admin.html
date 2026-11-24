@@ -1,0 +1,91 @@
+<div class="seccion-titulo">
+  <div>
+    <h1>Gestión de ollas</h1>
+    <p class="tenue mb-0">Administración global: activar o desactivar cualquier olla común</p>
+  </div>
+  <span class="chip chip-terracota">Rol ADMIN</span>
+</div>
+
+<div class="fila-filtros">
+  <div class="campo">
+    <label class="etiqueta" for="a-estado">Estado</label>
+    <select id="a-estado" name="filtro_activada" class="selector" [(ngModel)]="filtroActivada" (ngModelChange)="cargar()">
+      <option value="">Todas</option>
+      <option value="1">Activas</option>
+      <option value="0">Desactivadas</option>
+    </select>
+  </div>
+  <div class="campo" style="flex: 2; max-width: 340px">
+    <label class="etiqueta" for="a-q">Buscar por nombre o código</label>
+    <input id="a-q" name="busqueda" class="entrada" type="search" placeholder="Ej.: AYNI-0001"
+           [(ngModel)]="busqueda" (keyup.enter)="cargar()" />
+  </div>
+  <button type="button" class="btn" (click)="cargar()">Buscar</button>
+</div>
+
+@if (error()) {
+  <div class="alerta alerta-error mb-3">{{ error() }}</div>
+}
+
+@if (cargando()) {
+  <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando ollas…</span></div>
+} @else if (ollas().length === 0) {
+  <div class="vacio">
+    <h3>Sin resultados</h3>
+    <p>No hay ollas que coincidan con el filtro.</p>
+  </div>
+} @else {
+  <div class="tabla-contenedor">
+    <table class="datos">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Olla</th>
+          <th>Ubicación</th>
+          <th class="num">Beneficiarias(os)</th>
+          <th class="num">Usuarias</th>
+          <th>Atiende hoy</th>
+          <th>Estado</th>
+          <th>Registro</th>
+          <th class="acciones">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (olla of ollas(); track olla.id_olla) {
+          <tr>
+            <td class="negrita">{{ olla.codigo_unico }}</td>
+            <td>
+              {{ olla.nombre }}
+              <div class="tenue chico">{{ olla.direccion }}</div>
+            </td>
+            <td class="chico">{{ olla.distrito }}, {{ olla.departamento }}</td>
+            <td class="num">{{ fEntero(olla.beneficiarios) }}</td>
+            <td class="num">{{ fEntero(olla.total_usuarios) }}</td>
+            <td>
+              <span [class]="'chip ' + (olla.atiende_hoy ? 'chip-verde' : 'chip-neutro')">{{ fSiNo(olla.atiende_hoy) }}</span>
+            </td>
+            <td>
+              <span [class]="'chip ' + (olla.activada ? 'chip-verde' : 'chip-rojo')">
+                {{ olla.activada ? 'Activa' : 'Desactivada' }}
+              </span>
+            </td>
+            <td class="chico">{{ fFechaHora(olla.fecha_registro) }}</td>
+            <td class="acciones">
+              <button
+                type="button"
+                class="btn btn-mini"
+                [class.btn-peligro]="olla.activada"
+                [class.btn-exito]="!olla.activada"
+                [disabled]="procesando === olla.id_olla"
+                (click)="cambiarEstado(olla)"
+              >
+                {{ procesando === olla.id_olla ? 'Aplicando…' : olla.activada ? 'Desactivar' : 'Activar' }}
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="tenue chico mt-2 mb-0">{{ ollas().length }} olla(s) en total</p>
+}

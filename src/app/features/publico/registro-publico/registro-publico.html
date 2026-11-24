@@ -1,0 +1,174 @@
+<section class="envoltorio mt-4" style="max-width: 860px; padding-bottom: 40px">
+  <div class="seccion-titulo">
+    <div>
+      <h1>Registrar una olla común</h1>
+      <p class="tenue mb-0">Alta directa desde el portal, sin necesidad de cuenta</p>
+    </div>
+    <span class="chip chip-ambar">Paso único</span>
+  </div>
+
+  @if (creada(); as resultado) {
+    <div class="tarjeta">
+      <div class="alerta alerta-ok mb-3">
+        <div>
+          <strong>¡Olla registrada!</strong>
+          <div>{{ resultado.mensaje }}</div>
+        </div>
+      </div>
+      @if (resultado.olla; as olla) {
+        <div class="dato-fila"><span class="tenue">Código único</span><span class="valor">{{ olla.codigo_unico }}</span></div>
+        <div class="dato-fila"><span class="tenue">Nombre</span><span class="valor">{{ olla.nombre }}</span></div>
+        <div class="dato-fila"><span class="tenue">Ubicación</span><span class="valor">{{ olla.distrito }}, {{ olla.departamento }}</span></div>
+        <div class="dato-fila"><span class="tenue">Dirección</span><span class="valor">{{ olla.direccion }}</span></div>
+      }
+      <div class="fila envolver mt-3">
+        <button type="button" class="btn" (click)="verFicha(resultado.olla)">Ver ficha en el portal</button>
+        <button type="button" class="btn btn-fantasma" (click)="reiniciar()">Registrar otra olla</button>
+        <a routerLink="/" class="btn btn-suave">Ir al inicio</a>
+      </div>
+    </div>
+  } @else {
+    @if (error()) {
+      <div class="error-form">{{ error() }}</div>
+    }
+
+    <form class="tarjeta" (ngSubmit)="enviar()" #registro="ngForm">
+      <div class="tarjeta-titulo">Datos de la olla común</div>
+
+      <div class="grupo-form mb-3">
+        <div class="campo">
+          <label class="etiqueta" for="nombre">Nombre de la olla <span class="req">*</span></label>
+          <input
+            id="nombre"
+            name="nombre"
+            class="entrada"
+            type="text"
+            maxlength="150"
+            placeholder="Ej.: Olla Común Vida Nueva"
+            [(ngModel)]="nombre"
+            required
+          />
+        </div>
+        <div class="campo">
+          <label class="etiqueta" for="telefono">Teléfono <span class="req">*</span></label>
+          <input
+            id="telefono"
+            name="telefono"
+            class="entrada"
+            type="tel"
+            maxlength="20"
+            placeholder="Ej.: 987654321"
+            [(ngModel)]="telefono"
+            required
+          />
+          <span class="campo-ayuda">Solo números, entre 6 y 15 dígitos.</span>
+        </div>
+      </div>
+
+      <div class="grupo-form mb-3">
+        <div class="campo">
+          <label class="etiqueta" for="dep">Departamento <span class="req">*</span></label>
+          <select
+            id="dep"
+            name="departamento"
+            class="selector"
+            [(ngModel)]="departamentoSel"
+            (ngModelChange)="alCambiarDepartamento()"
+            required
+          >
+            <option value="">Seleccione…</option>
+            @for (dep of departamentos; track dep) {
+              <option [value]="dep">{{ dep }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label class="etiqueta" for="prov">Provincia <span class="req">*</span></label>
+          <select
+            id="prov"
+            name="provincia"
+            class="selector"
+            [(ngModel)]="provinciaSel"
+            (ngModelChange)="alCambiarProvincia()"
+            [disabled]="!departamentoSel"
+            required
+          >
+            <option value="">Seleccione…</option>
+            @for (prov of provincias; track prov) {
+              <option [value]="prov">{{ prov }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label class="etiqueta" for="dist">Distrito <span class="req">*</span></label>
+          <select
+            id="dist"
+            name="distrito"
+            class="selector"
+            [(ngModel)]="distritoSel"
+            [disabled]="!provinciaSel"
+            required
+          >
+            <option value="">Seleccione…</option>
+            @for (dist of distritos; track dist.id_ubigeo) {
+              <option [value]="dist.id_ubigeo">{{ dist.distrito }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="grupo-form mb-3">
+        <div class="campo">
+          <label class="etiqueta" for="direccion">Dirección <span class="req">*</span></label>
+          <input
+            id="direccion"
+            name="direccion"
+            class="entrada"
+            type="text"
+            maxlength="250"
+            placeholder="Ej.: Mz. K Lt. 14 AA.HH. Nueva Esperanza"
+            [(ngModel)]="direccion"
+            required
+          />
+        </div>
+        <div class="campo">
+          <label class="etiqueta" for="referencia">Referencia</label>
+          <input
+            id="referencia"
+            name="referencia"
+            class="entrada"
+            type="text"
+            maxlength="250"
+            placeholder="Ej.: frente a la plaza principal"
+            [(ngModel)]="referencia"
+          />
+        </div>
+        <div class="campo">
+          <label class="etiqueta" for="beneficiarios">Beneficiarias(os) iniciales</label>
+          <input
+            id="beneficiarios"
+            name="beneficiarios"
+            class="entrada"
+            type="number"
+            min="0"
+            max="100000"
+            [(ngModel)]="beneficiarios"
+          />
+        </div>
+      </div>
+
+      <div class="alerta alerta-info mb-3">
+        Al registrar, la olla recibe un código único y queda visible en el directorio público con el
+        estado «atiende hoy» por defecto. La dirigenta podrá crear su cuenta desde
+        <a routerLink="/registro">el registro de dirigenta</a>.
+      </div>
+
+      <div class="fila envolver">
+        <button type="submit" class="btn" [disabled]="cargando()">
+          {{ cargando() ? 'Registrando…' : 'Registrar olla común' }}
+        </button>
+        <a routerLink="/" class="btn btn-fantasma">Cancelar</a>
+      </div>
+    </form>
+  }
+</section>

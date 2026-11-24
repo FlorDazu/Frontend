@@ -1,0 +1,25 @@
+# ============================================================================
+# AYNI · Frontend (Angular 22) en Render — Web Service, plan gratuito
+#
+# Build:  instala dependencias (incluidas las de desarrollo: Angular CLI y
+#         @angular/build son necesarias para compilar) y genera
+#         dist/frontend/browser con environment.prod.ts.
+# Start:  server.mjs (Node nativo, sin dependencias) sirve los estáticos con
+#         fallback de SPA. Consumo ≈ 50 MB de RAM (límite del plan: 512 MB).
+#
+# Después del primer despliegue, en el servicio del BACKEND añadir:
+#   CORS_ORIGINS=https://ayni-frontend.onrender.com   (sin "/" final)
+# ============================================================================
+services:
+  - type: web
+    name: ayni-frontend
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node server.mjs
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "24"

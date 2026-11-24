@@ -1,0 +1,159 @@
+<div class="seccion-titulo">
+  <div>
+    <h1>Gestión de usuarios</h1>
+    <p class="tenue mb-0">Roles, activación, edición y desbloqueo de cuentas</p>
+  </div>
+  <span class="chip chip-terracota">Rol ADMIN</span>
+</div>
+
+<div class="fila-filtros">
+  <div class="campo">
+    <label class="etiqueta" for="u-rol">Rol</label>
+    <select id="u-rol" name="filtro_rol" class="selector" [(ngModel)]="filtroRol" (ngModelChange)="cargar()">
+      <option value="">Todos</option>
+      <option value="ADMIN">Administrador</option>
+      <option value="DIRIGENTA">Dirigenta</option>
+    </select>
+  </div>
+  <div class="campo">
+    <label class="etiqueta" for="u-activo">Estado</label>
+    <select id="u-activo" name="filtro_activo" class="selector" [(ngModel)]="filtroActivo" (ngModelChange)="cargar()">
+      <option value="">Todos</option>
+      <option value="1">Activos</option>
+      <option value="0">Desactivados</option>
+    </select>
+  </div>
+  <div class="campo" style="flex: 2; max-width: 340px">
+    <label class="etiqueta" for="u-q">Buscar por nombre o usuario</label>
+    <input id="u-q" name="busqueda" class="entrada" type="search" placeholder="Ej.: Rosa o dirigenta@"
+           [(ngModel)]="busqueda" (keyup.enter)="cargar()" />
+  </div>
+  <button type="button" class="btn" (click)="cargar()">Buscar</button>
+</div>
+
+@if (error()) {
+  <div class="alerta alerta-error mb-3">{{ error() }}</div>
+}
+@if (errorForm()) {
+  <div class="error-form">{{ errorForm() }}</div>
+}
+
+@if (cargando()) {
+  <div class="cargando"><div class="rueda" aria-hidden="true"></div><span>Cargando usuarios…</span></div>
+} @else if (usuarios().length === 0) {
+  <div class="vacio">
+    <h3>Sin resultados</h3>
+    <p>No hay usuarios que coincidan con el filtro.</p>
+  </div>
+} @else {
+  <div class="tabla-contenedor">
+    <table class="datos">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Olla</th>
+          <th>Estado</th>
+          <th>Intentos / bloqueo</th>
+          <th>Creado</th>
+          <th class="acciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (usuario of usuarios(); track usuario.id_usuario) {
+          <tr>
+            <td>
+              <span class="negrita">{{ usuario.nombre_completo }}</span>
+              <div class="tenue chico">{{ usuario.username }} · {{ usuario.telefono }}</div>
+            </td>
+            <td>
+              <span [class]="'chip ' + (usuario.rol === 'ADMIN' ? 'chip-terracota' : 'chip-ambar')">
+                {{ usuario.rol === 'ADMIN' ? 'Administrador' : 'Dirigenta' }}
+              </span>
+            </td>
+            <td class="chico">
+              @if (usuario.codigo_olla) {
+                {{ usuario.codigo_olla }} — {{ usuario.nombre_olla }}
+                @if (usuario.olla_activada === false) {
+                  <span class="chip chip-rojo">Olla desactivada</span>
+                }
+              } @else {
+                <span class="tenue">—</span>
+              }
+            </td>
+            <td>
+              <span [class]="'chip ' + (usuario.activo ? 'chip-verde' : 'chip-rojo')">
+                {{ usuario.activo ? 'Activo' : 'Desactivado' }}
+              </span>
+            </td>
+            <td class="chico">
+              @if (usuario.bloqueado) {
+                <span class="chip chip-rojo">Bloqueado</span>
+                <div class="texto-error chico">hasta {{ fFechaHora(usuario.bloqueado_hasta) }}</div>
+              } @else if (usuario.intentos_fallidos > 0) {
+                <span class="chip chip-ambar">{{ usuario.intentos_fallidos }} intento(s) fallido(s)</span>
+              } @else {
+                <span class="tenue chico">Sin intentos fallidos</span>
+              }
+            </td>
+            <td class="chico">{{ fFechaHora(usuario.fecha_creacion) }}</td>
+            <td class="acciones">
+              <div class="fila" style="justify-content: flex-end; flex-wrap: wrap">
+                <button type="button" class="btn btn-suave btn-mini" (click)="iniciarEdicion(usuario)">Editar</button>
+                <button
+                  type="button"
+                  class="btn btn-mini"
+                  [class.btn-exito]="!usuario.activo"
+                  [class.btn-fantasma]="usuario.activo"
+                  [disabled]="procesando === usuario.id_usuario"
+                  (click)="alternarActivo(usuario)"
+                >
+                  {{ usuario.activo ? 'Desactivar' : 'Activar' }}
+                </button>
+                @if (usuario.bloqueado) {
+                  <button type="button" class="btn btn-secundario btn-mini" [disabled]="procesando === usuario.id_usuario"
+                          (click)="desbloquear(usuario)">
+                    Desbloquear
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+
+          @if (usuarioEditando === usuario.id_usuario) {
+            <tr>
+              <td colspan="7" style="background: #fdfaf5">
+                <form (ngSubmit)="guardarEdicion(usuario)" #edicionForm="ngForm" class="mb-2">
+                  <div class="grupo-form">
+                    <div class="campo">
+                      <label class="etiqueta" [for]="'nombre-' + usuario.id_usuario">Nombre completo</label>
+                      <input class="entrada" type="text" maxlength="150" [id]="'nombre-' + usuario.id_usuario"
+                             [name]="'nombre_' + usuario.id_usuario" [(ngModel)]="edicion.nombre_completo" required />
+                    </div>
+                    <div class="campo">
+                      <label class="etiqueta" [for]="'tel-' + usuario.id_usuario">Teléfono</label>
+                      <input class="entrada" type="tel" maxlength="20" [id]="'tel-' + usuario.id_usuario"
+                             [name]="'tel_' + usuario.id_usuario" [(ngModel)]="edicion.telefono" required />
+                    </div>
+                    <div class="campo" style="justify-content: flex-end">
+                      <div class="fila">
+                        <button type="submit" class="btn btn-exito btn-mini" [disabled]="procesando === usuario.id_usuario">
+                          {{ procesando === usuario.id_usuario ? 'Guardando…' : 'Guardar cambios' }}
+                        </button>
+                        <button type="button" class="btn btn-fantasma btn-mini" (click)="cancelarEdicion()">Cancelar</button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+                <p class="campo-ayuda mb-0">
+                  El rol no se modifica desde aquí; la desactivación de la propia cuenta de administrador no está permitida.
+                </p>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="tenue chico mt-2 mb-0">{{ usuarios().length }} usuario(s)</p>
+}

@@ -1,0 +1,52 @@
+@if (menuAbierto()) {
+  <div class="cortina" (click)="cerrarMenu()"></div>
+}
+
+<div class="panel">
+  <aside class="barra-lateral" [class.abierta]="menuAbierto()">
+    <a routerLink="/" class="marca" (click)="cerrarMenu()">
+      <img
+        class="marca-logo"
+        src="images/LogoAYNI.png"
+        alt="Logotipo de AYNI, sistema comunitario de ollas comunes"
+        width="1024"
+        height="572"
+      />
+      <small>{{ auth.esAdmin() ? 'Admin' : 'Panel' }}</small>
+    </a>
+
+    <div class="usuario-tarjeta">
+      <div class="nombre">{{ auth.usuario()?.nombre_completo }}</div>
+      <div class="correo">{{ auth.usuario()?.username }}</div>
+      <div class="mt-1">
+        <span class="chip chip-terracota">{{ auth.nombreRol() }}</span>
+        @if (auth.usuario()?.olla; as olla) {
+          <span class="chip chip-neutro">{{ olla.codigo_unico }}</span>
+        }
+      </div>
+    </div>
+
+    <nav class="nav-lateral">
+      @for (enlace of enlaces(); track enlace.ruta) {
+        <a [routerLink]="enlace.ruta" routerLinkActive="activo" (click)="cerrarMenu()">{{ enlace.texto }}</a>
+      }
+    </nav>
+
+    <div class="apilar">
+      <button type="button" class="btn btn-fantasma btn-ancho" (click)="salir()">Cerrar sesión</button>
+      <button type="button" class="btn btn-suave btn-ancho btn-mini" (click)="irAlPortal()">Ver portal público</button>
+    </div>
+  </aside>
+
+  <div class="panel-cuerpo">
+    <header class="panel-top">
+      <button type="button" class="btn-menu" (click)="alternarMenu()" aria-label="Abrir menú">☰</button>
+      <strong>{{ auth.usuario()?.nombre_completo }}</strong>
+      <span class="chip chip-terracota">{{ auth.nombreRol() }}</span>
+    </header>
+
+    <main class="panel-contenido">
+      <router-outlet />
+    </main>
+  </div>
+</div>
