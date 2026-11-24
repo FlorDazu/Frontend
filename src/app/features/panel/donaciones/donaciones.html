@@ -91,21 +91,36 @@
           <div class="tarjeta-titulo">Insumos donados</div>
 
           @for (fila of items; track $index; let i = $index) {
-            <div class="grupo-form mb-2" style="grid-template-columns: 2fr 1fr 1fr auto; align-items: end">
+            <div class="grupo-form mb-2" style="grid-template-columns: 2fr 1.6fr 1fr auto; align-items: end">
               <div class="campo">
                 <label class="etiqueta" [for]="'item-insumo-' + i">Insumo</label>
                 <select class="selector" [id]="'item-insumo-' + i" [name]="'item_insumo_' + i"
-                        [(ngModel)]="fila.id_insumo">
+                        [(ngModel)]="fila.id_insumo" (ngModelChange)="alCambiarInsumo(fila)">
                   <option [value]="null" disabled>Seleccione…</option>
                   @for (insumo of insumos(); track insumo.id_insumo) {
-                    <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ insumo.unidad_base }})</option>
+                    <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ nombreUnidad(insumo.unidad_base) }})</option>
                   }
                 </select>
               </div>
               <div class="campo">
-                <label class="etiqueta" [for]="'item-cant-' + i">Cantidad</label>
-                <input class="entrada" type="number" min="0.01" step="0.01" [id]="'item-cant-' + i"
-                       [name]="'item_cantidad_' + i" [(ngModel)]="fila.cantidad" />
+                <label class="etiqueta" [for]="'item-cant-' + i">
+                  Cantidad @if (unidadDe(fila.id_insumo)) { en {{ nombreUnidad(unidadDe(fila.id_insumo)) }} }
+                </label>
+                <div class="fila" style="gap: 6px; flex-wrap: nowrap">
+                  <input class="entrada" type="number" min="0.001" step="any" [id]="'item-cant-' + i"
+                         style="flex: 1; min-width: 0" [name]="'item_cantidad_' + i" [(ngModel)]="fila.cantidad" />
+                  @if (fila.id_insumo) {
+                    <select class="selector" style="width: auto; flex: 0 0 auto" [name]="'item_unidad_' + i"
+                            aria-label="Unidad en la que escribe la cantidad" [(ngModel)]="fila.unidad">
+                      @for (opcion of opcionesDe(fila.id_insumo); track opcion.codigo) {
+                        <option [value]="opcion.codigo">{{ opcion.etiqueta }}</option>
+                      }
+                    </select>
+                  }
+                </div>
+                @if (requiereConversion(unidadDe(fila.id_insumo), fila.unidad) && cantidadBase(fila) !== null) {
+                  <span class="campo-ayuda">= <strong>{{ fDecimal(cantidadBase(fila)) }} {{ nombreUnidad(unidadDe(fila.id_insumo)) }}</strong></span>
+                }
               </div>
               <div class="campo">
                 <label class="etiqueta" [for]="'item-venc-' + i">Vencimiento</label>

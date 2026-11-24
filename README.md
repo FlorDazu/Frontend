@@ -1,7 +1,7 @@
 # AYNI · Frontend (Angular 22)
 
 SPA de la plataforma **AYNI** para la gestión de Ollas Comunes: portal público (KPIs, directorio de ollas, registro),
-panel de la dirigenta (mi olla, inventario PEPS, donaciones, recetas, reportes) y panel de administración.
+panel de la dirigenta (mi olla, inventario PEPS, donaciones, receta del día con botón «Otra receta», reportes). Las cantidades se registran en kg, L o unidades, con conversión automática desde gramos, sacos, ml, botellas, galoneras, docenas o cajas y panel de administración.
 
 - **Stack:** Angular 22 (standalone components + signals, rutas con carga diferida), CSS propio con base Bootstrap 5.0.2 (CDN), accesibilidad WCAG 2.1 AA.
 - **Backend:** API FastAPI desplegada en Render → `https://backend-mqef.onrender.com` (documentación en `/docs`).

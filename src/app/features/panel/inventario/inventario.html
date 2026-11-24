@@ -33,17 +33,33 @@
         <div class="grupo-form mb-3">
           <div class="campo">
             <label class="etiqueta" for="e-insumo">Insumo <span class="req">*</span></label>
-            <select id="e-insumo" name="entrada_insumo" class="selector" [(ngModel)]="entrada.id_insumo" required>
+            <select id="e-insumo" name="entrada_insumo" class="selector" [(ngModel)]="entrada.id_insumo"
+                    (ngModelChange)="entrada.unidad = unidadInicial($event)" required>
               <option [value]="0" disabled>Seleccione…</option>
               @for (insumo of insumos(); track insumo.id_insumo) {
-                <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ insumo.categoria }})</option>
+                <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ nombreUnidad(insumo.unidad_base) }})</option>
               }
             </select>
           </div>
           <div class="campo">
-            <label class="etiqueta" for="e-cantidad">Cantidad <span class="req">*</span></label>
-            <input id="e-cantidad" name="entrada_cantidad" class="entrada" type="number" min="0.01" step="0.01"
-                   [(ngModel)]="entrada.cantidad" required />
+            <label class="etiqueta" for="e-cantidad">
+              Cantidad @if (unidadDe(entrada.id_insumo)) { en {{ nombreUnidad(unidadDe(entrada.id_insumo)) }} } <span class="req">*</span>
+            </label>
+            <div class="fila" style="gap: 8px; flex-wrap: nowrap">
+              <input id="e-cantidad" name="entrada_cantidad" class="entrada" type="number" min="0.001" step="any"
+                     style="flex: 1; min-width: 0" [(ngModel)]="entrada.cantidad" required />
+              <select class="selector" name="entrada_unidad" style="width: auto; flex: 0 0 auto"
+                      aria-label="Unidad en la que escribe la cantidad" [(ngModel)]="entrada.unidad">
+                @for (opcion of opcionesDe(entrada.id_insumo); track opcion.codigo) {
+                  <option [value]="opcion.codigo">{{ opcion.etiqueta }}</option>
+                }
+              </select>
+            </div>
+            @if (requiereConversion(unidadDe(entrada.id_insumo), entrada.unidad) && cantidadBase(entrada.cantidad, entrada.id_insumo, entrada.unidad) !== null) {
+              <span class="campo-ayuda">
+                = <strong>{{ fDecimal(cantidadBase(entrada.cantidad, entrada.id_insumo, entrada.unidad)) }} {{ nombreUnidad(unidadDe(entrada.id_insumo)) }}</strong> (se guarda en {{ nombreUnidad(unidadDe(entrada.id_insumo)) }})
+              </span>
+            }
           </div>
           <div class="campo">
             <label class="etiqueta" for="e-vencimiento">Fecha de vencimiento</label>
@@ -78,17 +94,33 @@
         <div class="grupo-form mb-3">
           <div class="campo">
             <label class="etiqueta" for="s-insumo">Insumo <span class="req">*</span></label>
-            <select id="s-insumo" name="salida_insumo" class="selector" [(ngModel)]="salida.id_insumo" required>
+            <select id="s-insumo" name="salida_insumo" class="selector" [(ngModel)]="salida.id_insumo"
+                    (ngModelChange)="salida.unidad = unidadInicial($event)" required>
               <option [value]="0" disabled>Seleccione…</option>
               @for (insumo of insumos(); track insumo.id_insumo) {
-                <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ insumo.categoria }})</option>
+                <option [value]="insumo.id_insumo">{{ insumo.nombre }} ({{ nombreUnidad(insumo.unidad_base) }})</option>
               }
             </select>
           </div>
           <div class="campo">
-            <label class="etiqueta" for="s-cantidad">Cantidad <span class="req">*</span></label>
-            <input id="s-cantidad" name="salida_cantidad" class="entrada" type="number" min="0.01" step="0.01"
-                   [(ngModel)]="salida.cantidad" required />
+            <label class="etiqueta" for="s-cantidad">
+              Cantidad @if (unidadDe(salida.id_insumo)) { en {{ nombreUnidad(unidadDe(salida.id_insumo)) }} } <span class="req">*</span>
+            </label>
+            <div class="fila" style="gap: 8px; flex-wrap: nowrap">
+              <input id="s-cantidad" name="salida_cantidad" class="entrada" type="number" min="0.001" step="any"
+                     style="flex: 1; min-width: 0" [(ngModel)]="salida.cantidad" required />
+              <select class="selector" name="salida_unidad" style="width: auto; flex: 0 0 auto"
+                      aria-label="Unidad en la que escribe la cantidad" [(ngModel)]="salida.unidad">
+                @for (opcion of opcionesDe(salida.id_insumo); track opcion.codigo) {
+                  <option [value]="opcion.codigo">{{ opcion.etiqueta }}</option>
+                }
+              </select>
+            </div>
+            @if (requiereConversion(unidadDe(salida.id_insumo), salida.unidad) && cantidadBase(salida.cantidad, salida.id_insumo, salida.unidad) !== null) {
+              <span class="campo-ayuda">
+                = <strong>{{ fDecimal(cantidadBase(salida.cantidad, salida.id_insumo, salida.unidad)) }} {{ nombreUnidad(unidadDe(salida.id_insumo)) }}</strong> (se guarda en {{ nombreUnidad(unidadDe(salida.id_insumo)) }})
+              </span>
+            }
             <span class="campo-ayuda">Los lotes se descuentan primero en entrar (PEPS).</span>
           </div>
           <div class="campo">
@@ -255,7 +287,7 @@
                 <div class="tenue chico">{{ lote.categoria }}</div>
               </td>
               <td class="num">{{ fDecimal(lote.cantidad_inicial) }} {{ lote.unidad_base }}</td>
-              <td class="num negrita">{{ fDecimal(lote.cantidad_disponible) }}</td>
+              <td class="num negrita">{{ fDecimal(lote.cantidad_disponible) }} {{ lote.unidad_base }}</td>
               <td>{{ fFechaHora(lote.fecha_ingreso) }}</td>
               <td>
                 {{ fFecha(lote.fecha_vencimiento) }}

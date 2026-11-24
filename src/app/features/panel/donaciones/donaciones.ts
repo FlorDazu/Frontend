@@ -12,12 +12,15 @@ import type {
 import { DonacionesService } from '../../../core/services/donaciones.service';
 import { InventarioService } from '../../../core/services/inventario.service';
 import { ToastService } from '../../../core/toast.service';
+import { aUnidadBase, nombreUnidad, opcionesUnidad, requiereConversion, unidadPorDefecto, type OpcionUnidad } from '../../../core/unidades';
 
 type Pestana = 'donaciones' | 'donantes';
 
 interface FilaItem {
   id_insumo: number | null;
   cantidad: number | null;
+  /** Unidad en la que se escribió la cantidad (se convierte a la unidad base al enviar). */
+  unidad: string;
   fecha_vencimiento: string;
 }
 
@@ -118,7 +121,7 @@ export class Donaciones implements OnInit {
   }
 
   nuevaFila(): FilaItem {
-    return { id_insumo: null, cantidad: null, fecha_vencimiento: '' };
+    return { id_insumo: null, cantidad: null, unidad: '', fecha_vencimiento: '' };
   }
 
   agregarFila(): void {
@@ -129,9 +132,30 @@ export class Donaciones implements OnInit {
     if (this.items.length > 1) this.items.splice(indice, 1);
   }
 
-  insumoRequiereVencimiento(idInsumo: number | null): boolean {
+  insumoRequiereVencimiento(idInsumo: number | string | null): boolean {
     if (idInsumo === null) return false;
-    return !!this.insumos().find((i) => i.id_insumo === idInsumo)?.requiere_vencimiento;
+    return !!this.insumos().find((i) => i.id_insumo === Number(idInsumo))?.requiere_vencimiento;
+  }
+
+  // --- Unidades: cada insumo se guarda en su unidad base (kg, L o unidades) ---
+  readonly nombreUnidad = nombreUnidad;
+  readonly requiereConversion = requiereConversion;
+
+  unidadDe(idInsumo: number | string | null | undefined): string {
+    return this.insumos().find((i) => i.id_insumo === Number(idInsumo))?.unidad_base ?? '';
+  }
+
+  opcionesDe(idInsumo: number | string | null | undefined): OpcionUnidad[] {
+    return opcionesUnidad(this.unidadDe(idInsumo));
+  }
+
+  /** Cantidad del ítem convertida a la unidad base del insumo. */
+  cantidadBase(fila: FilaItem): number | null {
+    return aUnidadBase(fila.cantidad, this.unidadDe(fila.id_insumo), fila.unidad);
+  }
+
+  alCambiarInsumo(fila: FilaItem): void {
+    fila.unidad = unidadPorDefecto(this.unidadDe(fila.id_insumo));
   }
 
   enviarDonacion(): void {
@@ -157,8 +181,11 @@ export class Donaciones implements OnInit {
           this.errorForm.set(`Seleccione el insumo del ítem ${indice + 1}.`);
           return;
         }
-        if (!(fila.cantidad && fila.cantidad > 0)) {
-          this.errorForm.set(`La cantidad del ítem ${indice + 1} debe ser mayor a cero.`);
+        const cantidad = this.cantidadBase(fila);
+        if (cantidad === null || cantidad < 0.01) {
+          this.errorForm.set(
+            `La cantidad del ítem ${indice + 1} debe equivaler al menos a 0.01 ${this.nombreUnidad(this.unidadDe(fila.id_insumo))}.`,
+          );
           return;
         }
         if (this.insumoRequiereVencimiento(fila.id_insumo) && !fila.fecha_vencimiento) {
@@ -180,7 +207,7 @@ export class Donaciones implements OnInit {
           this.form.tipo_donacion === 'ESPECIE'
             ? this.items.map((fila) => ({
                 id_insumo: Number(fila.id_insumo),
-                cantidad: Number(fila.cantidad),
+                cantidad: this.cantidadBase(fila) ?? 0,
                 fecha_vencimiento: fila.fecha_vencimiento || null,
               }))
             : [],

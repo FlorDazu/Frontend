@@ -1,7 +1,7 @@
 <div class="seccion-titulo">
   <div>
     <h1>Recetas y despacho</h1>
-    <p class="tenue mb-0">Cálculo proporcional, despacho atómico y recetario externo</p>
+    <p class="tenue mb-0">Receta del día, cálculo proporcional, despacho atómico y recetario externo</p>
   </div>
   <div class="fila envolver medio">
     <div class="campo" style="min-width: 150px">
@@ -24,9 +24,16 @@
     <h3>No hay recetas activas</h3>
     <p>Contacte al administrador para configurar el recetario de su olla.</p>
   </div>
-} @else {
+} @else if (recetaDelDia(); as receta) {
+  <div class="separar envolver mb-2">
+    <span class="chip chip-terracota">Receta del día</span>
+    <button type="button" class="btn btn-fantasma btn-mini" (click)="otraReceta()"
+            [disabled]="recetas().length < 2 || despachando()"
+            aria-label="Mostrar otra receta al azar">
+      ↻ Otra receta
+    </button>
+  </div>
   <div class="rejilla-lista">
-    @for (receta of recetas(); track receta.id_receta) {
       <article class="tarjeta">
         <div class="receta-cabecera">
           <div>
@@ -92,8 +99,10 @@
           Despacho atómico: si algún insumo falta, no se descuenta ningún ingrediente.
         </p>
       </article>
-    }
   </div>
+  <p class="campo-ayuda mt-1">
+    Se muestra una receta por día entre las {{ recetas().length }} del recetario; use «Otra receta» para ver otra opción.
+  </p>
 }
 
 <!-- --------------------------------------------------------- recetas externas -->

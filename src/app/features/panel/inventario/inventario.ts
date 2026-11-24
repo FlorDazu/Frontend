@@ -5,6 +5,7 @@ import { mensajeDeError } from '../../../core/error-api';
 import type { Insumo, Lote, Semaforo, StockInsumo } from '../../../core/models';
 import { InventarioService } from '../../../core/services/inventario.service';
 import { ToastService } from '../../../core/toast.service';
+import { aUnidadBase, nombreUnidad, opcionesUnidad, requiereConversion, unidadPorDefecto, type OpcionUnidad } from '../../../core/unidades';
 
 type Pestana = 'stock' | 'lotes';
 
@@ -44,8 +45,8 @@ export class Inventario implements OnInit {
   // Formularios de movimiento
   mostrarEntrada = false;
   mostrarSalida = false;
-  entrada = { id_insumo: 0, cantidad: 0, fecha_vencimiento: '', motivo: '' };
-  salida = { id_insumo: 0, cantidad: 0, motivo: '' };
+  entrada = { id_insumo: 0, cantidad: 0, unidad: '', fecha_vencimiento: '', motivo: '' };
+  salida = { id_insumo: 0, cantidad: 0, unidad: '', motivo: '' };
   guardando = signal(false);
   errorForm = signal('');
 
@@ -62,6 +63,8 @@ export class Inventario implements OnInit {
         if (insumos.length && !this.entrada.id_insumo) {
           this.entrada.id_insumo = insumos[0].id_insumo;
           this.salida.id_insumo = insumos[0].id_insumo;
+          this.entrada.unidad = this.unidadInicial(this.entrada.id_insumo);
+          this.salida.unidad = this.unidadInicial(this.salida.id_insumo);
         }
       },
       error: (err) => this.error.set(mensajeDeError(err)),
@@ -108,9 +111,31 @@ export class Inventario implements OnInit {
       });
   }
 
-  insumoRequiereVencimiento(idInsumo: number): boolean {
-    return !!this.insumos().find((i) => i.id_insumo === idInsumo)?.requiere_vencimiento;
+  insumoRequiereVencimiento(idInsumo: number | string): boolean {
+    return !!this.insumos().find((i) => i.id_insumo === Number(idInsumo))?.requiere_vencimiento;
   }
+
+  // --- Unidades: cada insumo se guarda en su unidad base (kg, L o unidades) ---
+  readonly nombreUnidad = nombreUnidad;
+  readonly requiereConversion = requiereConversion;
+
+  unidadDe(idInsumo: number | string | null | undefined): string {
+    return this.insumos().find((i) => i.id_insumo === Number(idInsumo))?.unidad_base ?? '';
+  }
+
+  opcionesDe(idInsumo: number | string | null | undefined): OpcionUnidad[] {
+    return opcionesUnidad(this.unidadDe(idInsumo));
+  }
+
+  /** Cantidad convertida a la unidad base del insumo (lo que se envía a la API). */
+  cantidadBase(cantidad: number | null | undefined, idInsumo: number | string | null | undefined, codigo: string): number | null {
+    return aUnidadBase(cantidad, this.unidadDe(idInsumo), codigo);
+  }
+
+  unidadInicial(idInsumo: number | string | null | undefined): string {
+    return unidadPorDefecto(this.unidadDe(idInsumo));
+  }
+
 
   registrarEntrada(): void {
     this.errorForm.set('');
@@ -118,8 +143,9 @@ export class Inventario implements OnInit {
       this.errorForm.set('Seleccione el insumo de la entrada.');
       return;
     }
-    if (!(this.entrada.cantidad > 0)) {
-      this.errorForm.set('La cantidad debe ser mayor a cero.');
+    const cantidadEntrada = this.cantidadBase(this.entrada.cantidad, this.entrada.id_insumo, this.entrada.unidad);
+    if (cantidadEntrada === null || cantidadEntrada < 0.01) {
+      this.errorForm.set(`La cantidad debe equivaler al menos a 0.01 ${this.nombreUnidad(this.unidadDe(this.entrada.id_insumo))}.`);
       return;
     }
     if (this.insumoRequiereVencimiento(this.entrada.id_insumo) && !this.entrada.fecha_vencimiento) {
@@ -130,8 +156,8 @@ export class Inventario implements OnInit {
     this.guardando.set(true);
     this.inventario
       .entrada({
-        id_insumo: this.entrada.id_insumo,
-        cantidad: this.entrada.cantidad,
+        id_insumo: Number(this.entrada.id_insumo),
+        cantidad: cantidadEntrada,
         fecha_vencimiento: this.entrada.fecha_vencimiento || null,
         motivo: this.entrada.motivo.trim() || null,
       })
@@ -159,16 +185,17 @@ export class Inventario implements OnInit {
       this.errorForm.set('Seleccione el insumo de la salida.');
       return;
     }
-    if (!(this.salida.cantidad > 0)) {
-      this.errorForm.set('La cantidad debe ser mayor a cero.');
+    const cantidadSalida = this.cantidadBase(this.salida.cantidad, this.salida.id_insumo, this.salida.unidad);
+    if (cantidadSalida === null || cantidadSalida < 0.01) {
+      this.errorForm.set(`La cantidad debe equivaler al menos a 0.01 ${this.nombreUnidad(this.unidadDe(this.salida.id_insumo))}.`);
       return;
     }
 
     this.guardando.set(true);
     this.inventario
       .salida({
-        id_insumo: this.salida.id_insumo,
-        cantidad: this.salida.cantidad,
+        id_insumo: Number(this.salida.id_insumo),
+        cantidad: cantidadSalida,
         motivo: this.salida.motivo.trim() || null,
       })
       .subscribe({
